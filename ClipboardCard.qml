@@ -136,7 +136,6 @@ Rectangle {
                 GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.0) }
             }
         }
-        
 
         Item {
             Layout.fillWidth: true
@@ -162,6 +161,7 @@ Rectangle {
                 elide: Text.ElideRight
                 color: root.accentFgColor // Text matches header text
                 font.pointSize: 11
+                anchors.topMargin: 5 // Adjusted to position text higher
             }
 
             NImageRounded {
