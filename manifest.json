@@ -1,0 +1,26 @@
+{
+  "id": "clipper",
+  "name": "Clipper",
+  "version": "1.0.0",
+  "minNoctaliaVersion": "3.6.0",
+  "author": "blackbartblues",
+  "contributors": ["rscipher001"],
+  "license": "MIT",
+  "repository": "https://github.com/blackbartblues/noctalia-clipper",
+  "description": "Advanced clipboard manager with history, search, and keyboard navigation.",
+  "tags": ["Clipboard", "Utility", "Bar", "Panel"],
+  "entryPoints": {
+    "main": "Main.qml",
+    "barWidget": "BarWidget.qml",
+    "panel": "Panel.qml",
+    "settings": "Settings.qml"
+  },
+  "dependencies": {
+    "plugins": []
+  },
+  "metadata": {
+    "defaultSettings": {
+      "position": "Bottom"
+    }
+  }
+}

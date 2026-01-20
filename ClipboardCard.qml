@@ -10,6 +10,7 @@ Rectangle {
     id: root
     focus: true
     property var clipboardItem: null
+    property var pluginApi: null
     property string clipboardId: clipboardItem ? clipboardItem.id : ""
     property string mime: clipboardItem ? clipboardItem.mime : ""
     property string preview: clipboardItem ? clipboardItem.preview : ""
@@ -48,26 +49,40 @@ Rectangle {
     readonly property string typeLabel: isImage ? "Image" : isColor ? "Color" : isLink ? "Link" : isCode ? "Code" : isEmoji ? "Emoji" : isFile ? "File" : "Text"
     readonly property string typeIcon: isImage ? "photo" : isColor ? "palette" : isLink ? "link" : isCode ? "code" : isEmoji ? "mood-smile" : isFile ? "file" : "align-left"
 
-    // Safe color mapping
-    readonly property color accentColor: {
-        if (isImage) return getColor("mTertiary", "#e0b7c9");
-        if (isColor) return getColor("mSecondary", "#a984c4");
-        if (isLink) return getColor("mPrimary", "#c7a1d8");
-        if (isCode) return getColor("mSecondary", "#a984c4");
-        if (isEmoji) return getColor("mHover", "#e0b7c9");
-        if (isFile) return getColor("mError", "#e9899d");
-        return getColor("mOutline", "#555555"); // Text default
+    // Default colors per card type
+    readonly property var defaultCardColors: {
+        "Text": { bg: "mOutline", separator: "mSurface", fg: "mOnSurface" },
+        "Image": { bg: "mTertiary", separator: "mSurface", fg: "mOnTertiary" },
+        "Link": { bg: "mPrimary", separator: "mSurface", fg: "mOnPrimary" },
+        "Code": { bg: "mSecondary", separator: "mSurface", fg: "mOnSecondary" },
+        "Color": { bg: "mSecondary", separator: "mSurface", fg: "mOnSecondary" },
+        "Emoji": { bg: "mHover", separator: "mSurface", fg: "mOnHover" },
+        "File": { bg: "mError", separator: "mSurface", fg: "mOnError" }
     }
 
-    readonly property color accentFgColor: {
-        if (isImage) return getColor("mOnTertiary", "#20161f");
-        if (isColor) return getColor("mOnSecondary", "#f3edf7");
-        if (isLink) return getColor("mOnPrimary", "#1a151f");
-        if (isCode) return getColor("mOnSecondary", "#f3edf7");
-        if (isEmoji) return getColor("mOnHover", "#20161f");
-        if (isFile) return getColor("mOnError", "#1e1418");
-        return getColor("mOnSurface", "#e9e4f0");
+    // Get color setting for current card type
+    function getCardColorSetting(colorType) {
+        const settings = pluginApi?.pluginSettings?.cardColors;
+        const customColors = pluginApi?.pluginSettings?.customColors;
+        const cardType = typeLabel;
+
+        if (settings && settings[cardType] && settings[cardType][colorType]) {
+            const colorKey = settings[cardType][colorType];
+            if (colorKey === "custom" && customColors && customColors[cardType]) {
+                return customColors[cardType][colorType] || "#888888";
+            }
+            return getColor(colorKey, defaultCardColors[cardType]?.[colorType] || "#888888");
+        }
+
+        // Fallback to default
+        const defaultKey = defaultCardColors[cardType]?.[colorType];
+        return getColor(defaultKey, "#888888");
     }
+
+    // Colors from settings or defaults
+    readonly property color accentColor: getCardColorSetting("bg")
+    readonly property color accentFgColor: getCardColorSetting("fg")
+    readonly property color separatorColor: getCardColorSetting("separator")
 
     signal clicked
     signal deleteClicked
@@ -131,9 +146,9 @@ Rectangle {
             height: 1
             gradient: Gradient {
                 orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.0) }
-                GradientStop { position: 0.5; color: Qt.rgba(0, 0, 0, 1.0) }
-                GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.0) }
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.5; color: root.separatorColor }
+                GradientStop { position: 1.0; color: "transparent" }
             }
         }
 
@@ -161,7 +176,7 @@ Rectangle {
                 elide: Text.ElideRight
                 color: root.accentFgColor // Text matches header text
                 font.pointSize: 11
-                anchors.topMargin: 2 // Adjusted to position text higher
+                anchors.topMargin: -50 // Adjusted to position text higher
             }
 
             NImageRounded {
