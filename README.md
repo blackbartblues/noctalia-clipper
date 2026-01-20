@@ -81,7 +81,7 @@ qs ipc call plugin:clipper togglePanel
 
 ## Requirements
 
-- Noctalia Shell >= 3.6.0
+- Noctalia Shell >= 4.2.0
 - cliphist (clipboard history manager)
 - wl-clipboard (for Wayland clipboard access)
 
