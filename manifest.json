@@ -2,7 +2,7 @@
   "id": "clipper",
   "name": "Clipper",
   "version": "1.0.0",
-  "minNoctaliaVersion": "4.2.0",
+  "minNoctaliaVersion": "4.1.2",
   "author": "blackbartblues",
   "contributors": ["rscipher001"],
   "license": "MIT",
