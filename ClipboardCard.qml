@@ -161,7 +161,7 @@ Rectangle {
                 elide: Text.ElideRight
                 color: root.accentFgColor // Text matches header text
                 font.pointSize: 11
-                anchors.topMargin: 5 // Adjusted to position text higher
+                anchors.topMargin: 2 // Adjusted to position text higher
             }
 
             NImageRounded {
