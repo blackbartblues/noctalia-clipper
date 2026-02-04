@@ -1,4 +1,61 @@
 # Clipper Plugin - Comprehensive Changelog
+
+## Version 1.3.2 (2026-02-04)
+
+### Translation System Overhaul ✅
+
+**Fixed i18n structure to comply with Noctalia standards:**
+- Removed plugin name prefix from JSON structure
+- Changed from `{"clipper": {...}}` to `{"bar": {...}, "panel": {...}}`
+- Updated all 16 language files to new structure (de, en, es, fr, hu, ja, ko-KR, nl, pl, pt, ru, sv, tr, uk-UA, zh-CN, zh-TW)
+- Updated 37 translation calls across 4 QML files
+- All keys now use kebab-case format (e.g., `"panel.search-placeholder"`)
+- 100% consistency across all language files (43 keys each)
+
+**Files modified:**
+- `i18n/*.json` (16 files) - Structure update
+- `BarWidget.qml` (3 keys)
+- `ClipboardCard.qml` (3 keys)
+- `Panel.qml` (15 keys)
+- `Settings.qml` (16 keys)
+
+### ToDo Context Menu Fix ✅
+
+**Fixed non-functional ToDo button on clipboard cards:**
+- Added `screen` property passing from Panel.qml to ClipboardCard delegates
+- Fixed context menu positioning to appear at button location
+- Implemented proper menu lifecycle management
+- Added automatic closing of previous menu when opening new one
+- Removed Keys.onPressed handler (NPopupContextMenu is not an Item)
+
+**Implementation details:**
+- Added `property var currentScreen: screen` in Panel.qml
+- Added `property var activeContextMenu: null` for tracking open menus
+- Changed PanelService.showContextMenu to manual positioning with anchorItem
+- Menu now positioned using `mapToItem()` for accurate placement
+- MouseArea for click-outside-to-close functionality
+
+**Files modified:**
+- `ClipboardCard.qml` - Added screen property, menuAnchor, activeContextMenu tracking
+- `Panel.qml` - Added currentScreen and activeContextMenu properties, passed to delegates
+
+### Documentation Update ✅
+
+**Updated QML development guidelines:**
+- Added comprehensive i18n section to `~/.claude/rules/QML-code-reviewer.md`
+- Documented standard i18n structure patterns from official Noctalia plugins
+- Added 400+ lines of translation best practices and examples
+- Included anti-patterns and common mistakes to avoid
+
+**Changes summary:**
+- Total files changed: 21
+- i18n files: 16 updated
+- QML files: 4 updated
+- Documentation: 1 updated
+- Lines changed: ~500 across all files
+
+---
+
 ## Version Comparison: GitHub v1.1.0 → Local v1.3.1
 
 ---

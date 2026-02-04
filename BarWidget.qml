@@ -13,7 +13,7 @@ NIconButton {
     property string section: ""
 
     icon: "clipboard"
-    tooltipText: pluginApi?.tr("clipper.bar.tooltip") || "Clipboard History"
+    tooltipText: pluginApi?.tr("bar.tooltip") || "Clipboard History"
     tooltipDirection: BarService.getTooltipDirection(screen?.name)
     baseSize: Style.getCapsuleHeightForScreen(screen?.name)
     applyUiScale: false
@@ -34,12 +34,12 @@ NIconButton {
 
         model: [
             {
-                "label": pluginApi?.tr("clipper.context.toggle") || "Toggle Clipper",
+                "label": pluginApi?.tr("context.toggle") || "Toggle Clipper",
                 "action": "toggle-clipper",
                 "icon": "clipboard"
             },
             {
-                "label": pluginApi?.tr("clipper.context.settings") || "Open Settings",
+                "label": pluginApi?.tr("context.settings") || "Open Settings",
                 "action": "open-settings",
                 "icon": "settings"
             },

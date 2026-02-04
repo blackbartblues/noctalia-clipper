@@ -13,6 +13,8 @@ Rectangle {
     focus: true
     property var clipboardItem: null
     property var pluginApi: null
+    property var screen: null
+    property var panelRoot: null
     property string clipboardId: clipboardItem ? clipboardItem.id : ""
     property string mime: clipboardItem ? clipboardItem.mime : ""
     property string preview: clipboardItem ? clipboardItem.preview : ""
@@ -121,12 +123,22 @@ Rectangle {
         return model;
     }
 
+    // Anchor point for context menu positioning
+    Item {
+        id: menuAnchor
+        width: 0
+        height: 0
+        visible: false
+    }
+
     // Context menu for ToDo page selection
     NPopupContextMenu {
         id: todoContextMenu
+        screen: root.screen
+        anchorItem: menuAnchor
 
         onTriggered: action => {
-            todoContextMenu.close();
+            todoContextMenu.visible = false;
 
             if (action.startsWith("page-")) {
                 const pageId = parseInt(action.replace("page-", ""));
@@ -134,6 +146,26 @@ Rectangle {
                     root.pluginApi?.mainInstance?.addTodoWithText(root.preview.substring(0, 200), pageId);
                 }
             }
+        }
+
+        onVisibleChanged: {
+            if (!visible) {
+                // Cleanup when menu closes
+                root.focus = true;
+                if (root.panelRoot && root.panelRoot.activeContextMenu === todoContextMenu) {
+                    root.panelRoot.activeContextMenu = null;
+                }
+            }
+        }
+    }
+
+    // Click outside to close menu
+    MouseArea {
+        anchors.fill: parent
+        enabled: todoContextMenu.visible
+        z: todoContextMenu.visible ? 999 : -1
+        onClicked: {
+            todoContextMenu.visible = false;
         }
     }
 
@@ -190,21 +222,35 @@ Rectangle {
                     id: todoButton
                     visible: root.enableTodoIntegration && !root.isImage
                     icon: "checkbox"
-                    tooltipText: pluginApi?.tr("clipper.card.add-todo") || "Add to ToDo"
+                    tooltipText: pluginApi?.tr("card.add-todo") || "Add to ToDo"
                     colorFg: root.accentFgColor
                     colorBg: "transparent"
                     colorBgHover: Qt.rgba(0,0,0,0.1)
                     colorBorder: "transparent"
                     colorBorderHover: "transparent"
                     onClicked: {
+                        // Close any previously open menu
+                        if (root.panelRoot && root.panelRoot.activeContextMenu) {
+                            root.panelRoot.activeContextMenu.visible = false;
+                        }
+
+                        // Position anchor at button location
+                        const pos = todoButton.mapToItem(root, 0, todoButton.height);
+                        menuAnchor.x = pos.x;
+                        menuAnchor.y = pos.y;
+
+                        // Show menu and register it as active
                         todoContextMenu.model = root.buildTodoMenuModel();
-                        PanelService.showContextMenu(todoContextMenu, todoButton, null);
+                        todoContextMenu.visible = true;
+                        if (root.panelRoot) {
+                            root.panelRoot.activeContextMenu = todoContextMenu;
+                        }
                     }
                 }
                 NIconButton {
                     visible: !root.isPinned  // Hide pin button for pinned items (use delete instead)
                     icon: "pin"
-                    tooltipText: pluginApi?.tr("clipper.card.pin") || "Pin"
+                    tooltipText: pluginApi?.tr("card.pin") || "Pin"
                     colorFg: root.accentFgColor
                     colorBg: "transparent"
                     colorBgHover: Qt.rgba(0,0,0,0.1)
@@ -214,7 +260,7 @@ Rectangle {
                 }
                 NIconButton {
                     icon: "trash"
-                    tooltipText: pluginApi?.tr("clipper.card.delete") || "Delete"
+                    tooltipText: pluginApi?.tr("card.delete") || "Delete"
                     colorFg: root.accentFgColor
                     colorBg: "transparent"
                     colorBgHover: Qt.rgba(0,0,0,0.1)

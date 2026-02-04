@@ -144,7 +144,7 @@ ColumnLayout {
 
     // ===== INTEGRATIONS SECTION =====
     NText {
-        text: pluginApi?.tr("clipper.settings.integrations") || "Integrations"
+        text: pluginApi?.tr("settings.integrations") || "Integrations"
         font.bold: true
         font.pointSize: Style.fontSizeL
     }
@@ -152,10 +152,10 @@ ColumnLayout {
     // ToDo Integration Toggle
     NToggle {
         Layout.fillWidth: true
-        label: pluginApi?.tr("clipper.settings.todo-integration") || "ToDo Plugin Integration"
+        label: pluginApi?.tr("settings.todo-integration") || "ToDo Plugin Integration"
         description: root.todoPluginAvailable
-            ? (pluginApi?.tr("clipper.settings.todo-description") || "Add clipboard items directly to your ToDo list")
-            : (pluginApi?.tr("clipper.settings.todo-disabled") || "ToDo plugin is not installed or disabled")
+            ? (pluginApi?.tr("settings.todo-description") || "Add clipboard items directly to your ToDo list")
+            : (pluginApi?.tr("settings.todo-disabled") || "ToDo plugin is not installed or disabled")
         enabled: root.todoPluginAvailable
         checked: root.enableTodoIntegration
         onToggled: checked => {
@@ -170,7 +170,7 @@ ColumnLayout {
 
     // ===== APPEARANCE SECTION =====
     NText {
-        text: pluginApi?.tr("clipper.settings.appearance") || "Card Appearance"
+        text: pluginApi?.tr("settings.appearance") || "Card Appearance"
         font.bold: true
         font.pointSize: Style.fontSizeL
     }
@@ -178,8 +178,8 @@ ColumnLayout {
     // Card type selector
     NComboBox {
         Layout.fillWidth: true
-        label: pluginApi?.tr("clipper.settings.card-type") || "Card Type"
-        description: pluginApi?.tr("clipper.settings.card-type-desc") || "Select card type to customize"
+        label: pluginApi?.tr("settings.card-type") || "Card Type"
+        description: pluginApi?.tr("settings.card-type-desc") || "Select card type to customize"
         model: root.cardTypes
         currentKey: root.selectedCardType
         onSelected: key => root.selectedCardType = key
@@ -198,7 +198,7 @@ ColumnLayout {
             spacing: Style.marginS
 
             NText {
-                text: pluginApi?.tr("clipper.settings.preview") || "Preview"
+                text: pluginApi?.tr("settings.preview") || "Preview"
                 font.bold: true
                 color: root.getPreviewFg()
             }
@@ -281,7 +281,7 @@ ColumnLayout {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.top: parent.top
-                            text: pluginApi?.tr("clipper.settings.sample-content") || "Sample content preview..."
+                            text: pluginApi?.tr("settings.sample-content") || "Sample content preview..."
                             wrapMode: Text.Wrap
                             color: root.getPreviewFg()
                             verticalAlignment: Text.AlignTop
@@ -295,8 +295,8 @@ ColumnLayout {
     // Color settings
     NComboBox {
         Layout.fillWidth: true
-        label: pluginApi?.tr("clipper.settings.bg-color") || "Background Color"
-        description: pluginApi?.tr("clipper.settings.bg-color-desc") || "Card background color"
+        label: pluginApi?.tr("settings.bg-color") || "Background Color"
+        description: pluginApi?.tr("settings.bg-color-desc") || "Card background color"
         model: root.colorOptions
         currentKey: root.cardColors[root.selectedCardType]?.bg || "mOutline"
         onSelected: key => {
@@ -326,8 +326,8 @@ ColumnLayout {
 
     NComboBox {
         Layout.fillWidth: true
-        label: pluginApi?.tr("clipper.settings.separator-color") || "Separator Color"
-        description: pluginApi?.tr("clipper.settings.separator-color-desc") || "Line between header and content"
+        label: pluginApi?.tr("settings.separator-color") || "Separator Color"
+        description: pluginApi?.tr("settings.separator-color-desc") || "Line between header and content"
         model: root.colorOptions
         currentKey: root.cardColors[root.selectedCardType]?.separator || "mSurface"
         onSelected: key => {
@@ -357,8 +357,8 @@ ColumnLayout {
 
     NComboBox {
         Layout.fillWidth: true
-        label: pluginApi?.tr("clipper.settings.fg-color") || "Foreground Color"
-        description: pluginApi?.tr("clipper.settings.fg-color-desc") || "Title, icons and content text color"
+        label: pluginApi?.tr("settings.fg-color") || "Foreground Color"
+        description: pluginApi?.tr("settings.fg-color-desc") || "Title, icons and content text color"
         model: root.colorOptions
         currentKey: root.cardColors[root.selectedCardType]?.fg || "mOnSurface"
         onSelected: key => {
@@ -389,7 +389,7 @@ ColumnLayout {
     // Reset button
     NButton {
         Layout.alignment: Qt.AlignRight
-        text: pluginApi?.tr("clipper.settings.reset-defaults") || "Reset to Defaults"
+        text: pluginApi?.tr("settings.reset-defaults") || "Reset to Defaults"
         icon: "refresh"
         onClicked: {
             root.cardColors = JSON.parse(JSON.stringify(root.defaultCardColors));

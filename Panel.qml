@@ -15,6 +15,12 @@ Item {
     // Plugin API (injected by PluginPanelSlot)
     property var pluginApi: null
 
+    // Screen context - store reference for child components
+    property var currentScreen: screen
+
+    // Track currently open ToDo context menu
+    property var activeContextMenu: null
+
     // Refresh clipboard list when panel becomes visible
     onVisibleChanged: {
         if (visible) {
@@ -167,7 +173,7 @@ Item {
                 spacing: Style.marginM
 
                 NText {
-                    text: pluginApi?.tr("clipper.panel.title") || "Clipboard History"
+                    text: pluginApi?.tr("panel.title") || "Clipboard History"
                     font.bold: true
                     font.pointSize: Style.fontSizeL
                     Layout.alignment: Qt.AlignVCenter
@@ -180,7 +186,7 @@ Item {
 
                 NIconButton {
                     icon: "settings"
-                    tooltipText: pluginApi?.tr("clipper.panel.settings") || "Settings"
+                    tooltipText: pluginApi?.tr("panel.settings") || "Settings"
                     Layout.alignment: Qt.AlignVCenter
                     colorBg: (typeof Color !== "undefined") ? Color.mSurfaceVariant : "#444444"
                     colorBgHover: (typeof Color !== "undefined") ? Color.mHover : "#666666"
@@ -197,7 +203,7 @@ Item {
                     id: searchInput
                     Layout.preferredWidth: 250
                     Layout.alignment: Qt.AlignVCenter
-                    placeholderText: pluginApi?.tr("clipper.panel.search-placeholder") || "Search..."
+                    placeholderText: pluginApi?.tr("panel.search-placeholder") || "Search..."
                     text: root.searchText
                     onTextChanged: root.searchText = text
 
@@ -285,7 +291,7 @@ Item {
                     NIconButton {
                         focus: true
                         icon: "apps"
-                        tooltipText: pluginApi?.tr("clipper.panel.filter-all") || "All"
+                        tooltipText: pluginApi?.tr("panel.filter-all") || "All"
                         colorBg: (typeof Color !== "undefined") ? (root.filterType === "" ? Color.mPrimary : Color.mSurfaceVariant) : "#444444"
                         colorBgHover: (typeof Color !== "undefined") ? (root.filterType === "" ? Color.mPrimary : Color.mHover) : "#666666"
                         colorFg: (typeof Color !== "undefined") ? (root.filterType === "" ? Color.mOnPrimary : Color.mOnSurface) : "#FFFFFF"
@@ -301,7 +307,7 @@ Item {
                     NIconButton {
                         focus: true
                         icon: "align-left"
-                        tooltipText: pluginApi?.tr("clipper.panel.filter-text") || "Text"
+                        tooltipText: pluginApi?.tr("panel.filter-text") || "Text"
                         colorBg: (typeof Color !== "undefined") ? (root.filterType === "Text" ? Color.mPrimary : Color.mSurfaceVariant) : "#444444"
                         colorBgHover: (typeof Color !== "undefined") ? (root.filterType === "Text" ? Color.mPrimary : Color.mHover) : "#666666"
                         colorFg: (typeof Color !== "undefined") ? (root.filterType === "Text" ? Color.mOnPrimary : Color.mOnSurface) : "#FFFFFF"
@@ -317,7 +323,7 @@ Item {
                     NIconButton {
                         focus: true
                         icon: "photo"
-                        tooltipText: pluginApi?.tr("clipper.panel.filter-images") || "Images"
+                        tooltipText: pluginApi?.tr("panel.filter-images") || "Images"
                         colorBg: (typeof Color !== "undefined") ? (root.filterType === "Image" ? Color.mTertiary : Color.mSurfaceVariant) : "#444444"
                         colorBgHover: (typeof Color !== "undefined") ? (root.filterType === "Image" ? Color.mTertiary : Color.mHover) : "#666666"
                         colorFg: (typeof Color !== "undefined") ? (root.filterType === "Image" ? Color.mOnTertiary : Color.mOnSurface) : "#FFFFFF"
@@ -328,7 +334,7 @@ Item {
                     NIconButton {
                         focus: true
                         icon: "palette"
-                        tooltipText: pluginApi?.tr("clipper.panel.filter-colors") || "Colors"
+                        tooltipText: pluginApi?.tr("panel.filter-colors") || "Colors"
                         colorBg: (typeof Color !== "undefined") ? (root.filterType === "Color" ? Color.mSecondary : Color.mSurfaceVariant) : "#444444"
                         colorBgHover: (typeof Color !== "undefined") ? (root.filterType === "Color" ? Color.mSecondary : Color.mHover) : "#666666"
                         colorFg: (typeof Color !== "undefined") ? (root.filterType === "Color" ? Color.mOnSecondary : Color.mOnSurface) : "#FFFFFF"
@@ -339,7 +345,7 @@ Item {
                     NIconButton {
                         focus: true
                         icon: "link"
-                        tooltipText: pluginApi?.tr("clipper.panel.filter-links") || "Links"
+                        tooltipText: pluginApi?.tr("panel.filter-links") || "Links"
                         colorBg: (typeof Color !== "undefined") ? (root.filterType === "Link" ? Color.mPrimary : Color.mSurfaceVariant) : "#444444"
                         colorBgHover: (typeof Color !== "undefined") ? (root.filterType === "Link" ? Color.mPrimary : Color.mHover) : "#666666"
                         colorFg: (typeof Color !== "undefined") ? (root.filterType === "Link" ? Color.mOnPrimary : Color.mOnSurface) : "#FFFFFF"
@@ -350,7 +356,7 @@ Item {
                     NIconButton {
                         focus: true
                         icon: "code"
-                        tooltipText: pluginApi?.tr("clipper.panel.filter-code") || "Code"
+                        tooltipText: pluginApi?.tr("panel.filter-code") || "Code"
                         colorBg: (typeof Color !== "undefined") ? (root.filterType === "Code" ? Color.mSecondary : Color.mSurfaceVariant) : "#444444"
                         colorBgHover: (typeof Color !== "undefined") ? (root.filterType === "Code" ? Color.mSecondary : Color.mHover) : "#666666"
                         colorFg: (typeof Color !== "undefined") ? (root.filterType === "Code" ? Color.mOnSecondary : Color.mOnSurface) : "#FFFFFF"
@@ -361,7 +367,7 @@ Item {
                     NIconButton {
                         focus: true
                         icon: "mood-smile"
-                        tooltipText: pluginApi?.tr("clipper.panel.filter-emoji") || "Emoji"
+                        tooltipText: pluginApi?.tr("panel.filter-emoji") || "Emoji"
                         colorBg: (typeof Color !== "undefined") ? (root.filterType === "Emoji" ? Color.mPrimary : Color.mSurfaceVariant) : "#444444"
                         colorBgHover: (typeof Color !== "undefined") ? (root.filterType === "Emoji" ? Color.mPrimary : Color.mHover) : "#666666"
                         colorFg: (typeof Color !== "undefined") ? (root.filterType === "Emoji" ? Color.mOnPrimary : Color.mOnSurface) : "#FFFFFF"
@@ -372,7 +378,7 @@ Item {
                     NIconButton {
                         focus: true
                         icon: "file"
-                        tooltipText: pluginApi?.tr("clipper.panel.filter-files") || "Files"
+                        tooltipText: pluginApi?.tr("panel.filter-files") || "Files"
                         colorBg: (typeof Color !== "undefined") ? (root.filterType === "File" ? Color.mTertiary : Color.mSurfaceVariant) : "#444444"
                         colorBgHover: (typeof Color !== "undefined") ? (root.filterType === "File" ? Color.mTertiary : Color.mHover) : "#666666"
                         colorFg: (typeof Color !== "undefined") ? (root.filterType === "File" ? Color.mOnTertiary : Color.mOnSurface) : "#FFFFFF"
@@ -391,7 +397,7 @@ Item {
 
                 NButton {
                     focus: true
-                    text: pluginApi?.tr("clipper.panel.clear-all") || "Clear All"
+                    text: pluginApi?.tr("panel.clear-all") || "Clear All"
                     icon: "trash"
                     Layout.alignment: Qt.AlignVCenter
                     Layout.topMargin: -2 * Style.uiScaleRatio
@@ -489,6 +495,8 @@ Item {
                 delegate: ClipboardCard {
                     clipboardItem: modelData
                     pluginApi: root.pluginApi
+                    screen: root.currentScreen
+                    panelRoot: root
                     height: listView.height
                     selected: index === root.selectedIndex
                     enableTodoIntegration: root.pluginApi?.pluginSettings?.enableTodoIntegration || false
@@ -537,7 +545,7 @@ Item {
                 NText {
                     anchors.centerIn: parent
                     visible: listView.count === 0
-                    text: root.filterType || root.searchText ? (pluginApi?.tr("clipper.panel.no-matches") || "No matching items") : (pluginApi?.tr("clipper.panel.empty") || "Clipboard is empty")
+                    text: root.filterType || root.searchText ? (pluginApi?.tr("panel.no-matches") || "No matching items") : (pluginApi?.tr("panel.empty") || "Clipboard is empty")
                     color: (typeof Color !== "undefined") ? Color.mOnSurfaceVariant : "#AAAAAA"
                 }
             }
@@ -566,7 +574,7 @@ Item {
                     spacing: Style.marginM
 
                     NText {
-                        text: pluginApi?.tr("clipper.panel.pinned-title") || "Pinned Items"
+                        text: pluginApi?.tr("panel.pinned-title") || "Pinned Items"
                         font.bold: true
                         font.pointSize: Style.fontSizeL
                         Layout.alignment: Qt.AlignVCenter
@@ -591,6 +599,7 @@ Item {
                     delegate: ClipboardCard {
                         width: pinnedListView.width
                         height: Math.min(150, pinnedPanel.height * 0.25)
+                        panelRoot: root
                         clipboardItem: {
                             return {
                                 "id": modelData.id,
@@ -602,6 +611,7 @@ Item {
                         }
                         isPinned: true
                         pluginApi: root.pluginApi
+                        screen: root.currentScreen
                         selected: false
                         pinnedImageDataUrl: modelData.isImage ? modelData.content : ""  // Pass data URL directly
 
@@ -625,7 +635,7 @@ Item {
                     NText {
                         anchors.centerIn: parent
                         visible: pinnedListView.count === 0
-                        text: pluginApi?.tr("clipper.panel.no-pinned") || "No pinned items"
+                        text: pluginApi?.tr("panel.no-pinned") || "No pinned items"
                         color: (typeof Color !== "undefined") ? Color.mOnSurfaceVariant : "#AAAAAA"
                     }
                 }
