@@ -1,5 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
+import Quickshell.Io
 import qs.Commons
 import qs.Widgets
 
@@ -7,6 +9,12 @@ ColumnLayout {
     id: root
 
     property var pluginApi: null
+
+    // ToDo integration
+    property bool todoPluginAvailable: false
+    property bool enableTodoIntegration: pluginApi?.pluginSettings?.enableTodoIntegration ?? false
+
+    // Pinned items settings
 
     // Available card types
     readonly property var cardTypes: [
@@ -69,6 +77,28 @@ ColumnLayout {
 
     spacing: Style.marginL
 
+    // Home directory for path resolution
+    readonly property string homeDir: Quickshell.env("HOME") || ""
+
+    // Check if ToDo plugin is installed and enabled
+    FileView {
+        id: pluginsConfigFile
+        path: root.homeDir + "/.config/noctalia/plugins.json"
+        printErrors: false
+        watchChanges: true
+        onLoaded: {
+            try {
+                const content = text();
+                if (content && content.length > 0) {
+                    const config = JSON.parse(content);
+                    root.todoPluginAvailable = config?.states?.todo?.enabled === true;
+                }
+            } catch (e) {
+                root.todoPluginAvailable = false;
+            }
+        }
+    }
+
     Component.onCompleted: {
         // Load saved settings
         if (pluginApi?.pluginSettings?.cardColors) {
@@ -84,6 +114,9 @@ ColumnLayout {
             } catch (e) {
                 Logger.e("clipper", "Failed to load customColors: " + e);
             }
+        }
+        if (pluginApi?.pluginSettings?.enableTodoIntegration !== undefined) {
+            enableTodoIntegration = pluginApi.pluginSettings.enableTodoIntegration;
         }
     }
 
@@ -109,11 +142,44 @@ ColumnLayout {
         return getColorValue(cardColors[selectedCardType]?.fg || "mOnSurface", selectedCardType, "fg");
     }
 
+    // ===== INTEGRATIONS SECTION =====
+    NText {
+        text: pluginApi?.tr("clipper.settings.integrations") || "Integrations"
+        font.bold: true
+        font.pointSize: Style.fontSizeL
+    }
+
+    // ToDo Integration Toggle
+    NToggle {
+        Layout.fillWidth: true
+        label: pluginApi?.tr("clipper.settings.todo-integration") || "ToDo Plugin Integration"
+        description: root.todoPluginAvailable
+            ? (pluginApi?.tr("clipper.settings.todo-description") || "Add clipboard items directly to your ToDo list")
+            : (pluginApi?.tr("clipper.settings.todo-disabled") || "ToDo plugin is not installed or disabled")
+        enabled: root.todoPluginAvailable
+        checked: root.enableTodoIntegration
+        onToggled: checked => {
+            root.enableTodoIntegration = checked;
+            root.saveSettings();
+        }
+    }
+
+    NDivider {
+        Layout.fillWidth: true
+    }
+
+    // ===== APPEARANCE SECTION =====
+    NText {
+        text: pluginApi?.tr("clipper.settings.appearance") || "Card Appearance"
+        font.bold: true
+        font.pointSize: Style.fontSizeL
+    }
+
     // Card type selector
     NComboBox {
         Layout.fillWidth: true
-        label: "Card Type"
-        description: "Select card type to customize"
+        label: pluginApi?.tr("clipper.settings.card-type") || "Card Type"
+        description: pluginApi?.tr("clipper.settings.card-type-desc") || "Select card type to customize"
         model: root.cardTypes
         currentKey: root.selectedCardType
         onSelected: key => root.selectedCardType = key
@@ -123,13 +189,8 @@ ColumnLayout {
     Rectangle {
         Layout.fillWidth: true
         Layout.preferredHeight: 280
-        color: getColor("mSurfaceVariant", "#333333")
+        color: (typeof Color !== "undefined") ? Color.mSurfaceVariant : "#333333"
         radius: Style.radiusM
-
-        function getColor(propName, fallback) {
-            if (typeof Color !== "undefined" && Color[propName]) return Color[propName];
-            return fallback;
-        }
 
         ColumnLayout {
             anchors.fill: parent
@@ -137,12 +198,12 @@ ColumnLayout {
             spacing: Style.marginS
 
             NText {
-                text: "Preview"
+                text: pluginApi?.tr("clipper.settings.preview") || "Preview"
                 font.bold: true
                 color: root.getPreviewFg()
             }
 
-            // Preview card - same size as real card (250 x ~220)
+            // Preview card
             Rectangle {
                 Layout.preferredWidth: 250
                 Layout.preferredHeight: 220
@@ -217,10 +278,13 @@ ColumnLayout {
                         Layout.margins: 8
 
                         NText {
-                            anchors.fill: parent
-                            text: "Sample content preview..."
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            text: pluginApi?.tr("clipper.settings.sample-content") || "Sample content preview..."
                             wrapMode: Text.Wrap
                             color: root.getPreviewFg()
+                            verticalAlignment: Text.AlignTop
                         }
                     }
                 }
@@ -229,103 +293,103 @@ ColumnLayout {
     }
 
     // Color settings
-    ColumnLayout {
+    NComboBox {
         Layout.fillWidth: true
-        spacing: Style.marginM
-
-        NComboBox {
-            Layout.fillWidth: true
-            label: "Background Color"
-            description: "Card background color"
-            model: root.colorOptions
-            currentKey: root.cardColors[root.selectedCardType]?.bg || "mOutline"
-            onSelected: key => {
-                if (!root.cardColors[root.selectedCardType]) {
-                    root.cardColors[root.selectedCardType] = {};
-                }
-                root.cardColors[root.selectedCardType].bg = key;
-                root.cardColorsChanged();
+        label: pluginApi?.tr("clipper.settings.bg-color") || "Background Color"
+        description: pluginApi?.tr("clipper.settings.bg-color-desc") || "Card background color"
+        model: root.colorOptions
+        currentKey: root.cardColors[root.selectedCardType]?.bg || "mOutline"
+        onSelected: key => {
+            if (!root.cardColors[root.selectedCardType]) {
+                root.cardColors[root.selectedCardType] = {};
             }
+            root.cardColors[root.selectedCardType].bg = key;
+            root.cardColorsChanged();
+            root.saveSettings();
         }
+    }
 
-        // Custom color picker for background (visible only when custom is selected)
-        NColorPicker {
-            visible: root.cardColors[root.selectedCardType]?.bg === "custom"
-            Layout.preferredWidth: Style.sliderWidth
-            Layout.preferredHeight: Style.baseWidgetSize
-            selectedColor: root.customColors[root.selectedCardType]?.bg || "#888888"
-            onColorSelected: color => {
-                if (!root.customColors[root.selectedCardType]) {
-                    root.customColors[root.selectedCardType] = {};
-                }
-                root.customColors[root.selectedCardType].bg = color.toString();
-                root.customColorsChanged();
+    NColorPicker {
+        visible: root.cardColors[root.selectedCardType]?.bg === "custom"
+        Layout.preferredWidth: Style.sliderWidth
+        Layout.preferredHeight: Style.baseWidgetSize
+        selectedColor: root.customColors[root.selectedCardType]?.bg || "#888888"
+        onColorSelected: color => {
+            if (!root.customColors[root.selectedCardType]) {
+                root.customColors[root.selectedCardType] = {};
             }
+            root.customColors[root.selectedCardType].bg = color.toString();
+            root.customColorsChanged();
+            root.saveSettings();
         }
+    }
 
-        NComboBox {
-            Layout.fillWidth: true
-            label: "Separator Color"
-            description: "Line between header and content"
-            model: root.colorOptions
-            currentKey: root.cardColors[root.selectedCardType]?.separator || "mSurface"
-            onSelected: key => {
-                if (!root.cardColors[root.selectedCardType]) {
-                    root.cardColors[root.selectedCardType] = {};
-                }
-                root.cardColors[root.selectedCardType].separator = key;
-                root.cardColorsChanged();
+    NComboBox {
+        Layout.fillWidth: true
+        label: pluginApi?.tr("clipper.settings.separator-color") || "Separator Color"
+        description: pluginApi?.tr("clipper.settings.separator-color-desc") || "Line between header and content"
+        model: root.colorOptions
+        currentKey: root.cardColors[root.selectedCardType]?.separator || "mSurface"
+        onSelected: key => {
+            if (!root.cardColors[root.selectedCardType]) {
+                root.cardColors[root.selectedCardType] = {};
             }
+            root.cardColors[root.selectedCardType].separator = key;
+            root.cardColorsChanged();
+            root.saveSettings();
         }
+    }
 
-        NColorPicker {
-            visible: root.cardColors[root.selectedCardType]?.separator === "custom"
-            Layout.preferredWidth: Style.sliderWidth
-            Layout.preferredHeight: Style.baseWidgetSize
-            selectedColor: root.customColors[root.selectedCardType]?.separator || "#000000"
-            onColorSelected: color => {
-                if (!root.customColors[root.selectedCardType]) {
-                    root.customColors[root.selectedCardType] = {};
-                }
-                root.customColors[root.selectedCardType].separator = color.toString();
-                root.customColorsChanged();
+    NColorPicker {
+        visible: root.cardColors[root.selectedCardType]?.separator === "custom"
+        Layout.preferredWidth: Style.sliderWidth
+        Layout.preferredHeight: Style.baseWidgetSize
+        selectedColor: root.customColors[root.selectedCardType]?.separator || "#000000"
+        onColorSelected: color => {
+            if (!root.customColors[root.selectedCardType]) {
+                root.customColors[root.selectedCardType] = {};
             }
+            root.customColors[root.selectedCardType].separator = color.toString();
+            root.customColorsChanged();
+            root.saveSettings();
         }
+    }
 
-        NComboBox {
-            Layout.fillWidth: true
-            label: "Foreground Color"
-            description: "Title, icons and content text color"
-            model: root.colorOptions
-            currentKey: root.cardColors[root.selectedCardType]?.fg || "mOnSurface"
-            onSelected: key => {
-                if (!root.cardColors[root.selectedCardType]) {
-                    root.cardColors[root.selectedCardType] = {};
-                }
-                root.cardColors[root.selectedCardType].fg = key;
-                root.cardColorsChanged();
+    NComboBox {
+        Layout.fillWidth: true
+        label: pluginApi?.tr("clipper.settings.fg-color") || "Foreground Color"
+        description: pluginApi?.tr("clipper.settings.fg-color-desc") || "Title, icons and content text color"
+        model: root.colorOptions
+        currentKey: root.cardColors[root.selectedCardType]?.fg || "mOnSurface"
+        onSelected: key => {
+            if (!root.cardColors[root.selectedCardType]) {
+                root.cardColors[root.selectedCardType] = {};
             }
+            root.cardColors[root.selectedCardType].fg = key;
+            root.cardColorsChanged();
+            root.saveSettings();
         }
+    }
 
-        NColorPicker {
-            visible: root.cardColors[root.selectedCardType]?.fg === "custom"
-            Layout.preferredWidth: Style.sliderWidth
-            Layout.preferredHeight: Style.baseWidgetSize
-            selectedColor: root.customColors[root.selectedCardType]?.fg || "#e9e4f0"
-            onColorSelected: color => {
-                if (!root.customColors[root.selectedCardType]) {
-                    root.customColors[root.selectedCardType] = {};
-                }
-                root.customColors[root.selectedCardType].fg = color.toString();
-                root.customColorsChanged();
+    NColorPicker {
+        visible: root.cardColors[root.selectedCardType]?.fg === "custom"
+        Layout.preferredWidth: Style.sliderWidth
+        Layout.preferredHeight: Style.baseWidgetSize
+        selectedColor: root.customColors[root.selectedCardType]?.fg || "#e9e4f0"
+        onColorSelected: color => {
+            if (!root.customColors[root.selectedCardType]) {
+                root.customColors[root.selectedCardType] = {};
             }
+            root.customColors[root.selectedCardType].fg = color.toString();
+            root.customColorsChanged();
+            root.saveSettings();
         }
     }
 
     // Reset button
     NButton {
         Layout.alignment: Qt.AlignRight
-        text: "Reset to Defaults"
+        text: pluginApi?.tr("clipper.settings.reset-defaults") || "Reset to Defaults"
         icon: "refresh"
         onClicked: {
             root.cardColors = JSON.parse(JSON.stringify(root.defaultCardColors));
@@ -338,6 +402,7 @@ ColumnLayout {
                 "Emoji": { bg: "#e0b7c9", separator: "#000000", fg: "#20161f" },
                 "File": { bg: "#e9899d", separator: "#000000", fg: "#1e1418" }
             };
+            root.saveSettings();
         }
     }
 
@@ -349,8 +414,8 @@ ColumnLayout {
 
         pluginApi.pluginSettings.cardColors = JSON.parse(JSON.stringify(root.cardColors));
         pluginApi.pluginSettings.customColors = JSON.parse(JSON.stringify(root.customColors));
-        pluginApi.saveSettings();
+        pluginApi.pluginSettings.enableTodoIntegration = root.enableTodoIntegration;
 
-        Logger.i("clipper", "Settings saved successfully");
+        pluginApi.saveSettings();
     }
 }

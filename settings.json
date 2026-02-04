@@ -74,5 +74,7 @@
       "separator": "#000000",
       "fg": "#1e1418"
     }
-  }
+  },
+  "enableTodoIntegration": true,
+  "autoOpenPinnedPanel": false
 }
