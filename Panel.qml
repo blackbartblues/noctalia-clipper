@@ -21,10 +21,18 @@ Item {
     // Track currently open ToDo context menu
     property var activeContextMenu: null
 
-    // Refresh clipboard list when panel becomes visible
+    // Refresh clipboard list and load notecards when panel becomes visible
+    // Save notecards when panel is closed
     onVisibleChanged: {
         if (visible) {
             pluginApi?.mainInstance?.refreshOnPanelOpen();
+            pluginApi?.mainInstance?.loadNoteCards();
+        } else {
+            // Sync all local changes from notecards before saving
+            if (noteCardsPanel && noteCardsPanel.children[0] && noteCardsPanel.children[0].syncAllChanges) {
+                noteCardsPanel.children[0].syncAllChanges();
+            }
+            pluginApi?.mainInstance?.saveNoteCards();
         }
     }
 
@@ -641,6 +649,23 @@ Item {
                 }
             }
         }  // End pinnedPanel
+
+        // NOTECARDS PANEL - Middle space (between pinned and clipboard)
+        Item {
+            id: noteCardsPanel
+            anchors.left: pinnedPanel.right
+            anchors.leftMargin: Style.marginM
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.bottom: clipboardPanel.top
+            anchors.bottomMargin: Style.marginM
+
+            NoteCardsPanel {
+                anchors.fill: parent
+                pluginApi: root.pluginApi
+                screen: root.currentScreen
+            }
+        }  // End noteCardsPanel
     }  // End mainContainer
 
     Component.onCompleted: {

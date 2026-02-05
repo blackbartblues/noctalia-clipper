@@ -16,6 +16,10 @@ Item {
     property var pinnedItems: []
     property int pinnedRevision: 0
 
+    // Note cards data
+    property var noteCards: []
+    property int noteCardsRevision: 0
+
 
 
     // Clipboard items from cliphist
@@ -34,6 +38,7 @@ Item {
 
     // Constants for limits
     readonly property int maxPinnedItems: 20          // Maximum number of pinned items
+    readonly property int maxNoteCards: 20      // Maximum number of note cards
     readonly property int maxTodoTextLength: 500      // Maximum text length for ToDo items
     readonly property int maxImageSize: 5 * 1024 * 1024   // 5MB - max image size for pinning
     readonly property int maxTextSize: 1 * 1024 * 1024    // 1MB - max text size for pinning
@@ -55,6 +60,60 @@ Item {
                 root.pinnedItems = [];
             }
         }
+    }
+
+    // NoteCards directory path
+    readonly property string noteCardsDir: Quickshell.env("HOME") + "/.config/noctalia/plugins/clipper/notecards"
+
+    // Process to load all notecards from directory
+    Process {
+        id: loadNoteCardsProc
+        stdout: StdioCollector {}
+        stderr: StdioCollector {}
+
+        onExited: (exitCode) => {
+            if (exitCode !== 0) {
+                Logger.e("clipper", "Failed to load notecards. Exit code: " + exitCode + ", stderr: " + String(stderr.text));
+                root.noteCards = [];
+                return;
+            }
+
+            try {
+                const output = String(stdout.text).trim();
+                if (!output || output === "[]") {
+                    root.noteCards = [];
+                    root.noteCardsRevision++;
+
+        // Save to file
+                    return;
+                }
+
+                const loadedNotes = JSON.parse(output);
+                root.noteCards = Array.isArray(loadedNotes) ? loadedNotes : [];
+                root.noteCardsRevision++;
+
+        // Save to file
+                Logger.i("clipper", "Loaded " + root.noteCards.length + " notecards");
+                
+                // If we were waiting to show note selector, show it now
+                if (root.pendingShowNoteSelector && root.pendingNoteCardText) {
+                    root.pendingShowNoteSelector = false;
+                    root.showNoteCardSelector(root.pendingNoteCardText);
+                }
+            } catch(e) {
+                Logger.e("clipper", "Failed to parse notecards: " + e + ". Output length: " + String(stdout.text).length);
+                root.noteCards = [];
+            }
+        }
+    }
+
+    // Function to load all notecards
+    function loadNoteCards() {
+        // Use jq to create a proper JSON array from all .json files
+        const script = "cd '" + root.noteCardsDir + "' || { echo '[]'; exit 0; }; " +
+                      "jq -s '.' *.json 2>/dev/null || echo '[]'";
+        loadNoteCardsProc.command = ["bash", "-c", script];
+        loadNoteCardsProc.running = true;
     }
 
     // Helper function to add to image cache with LRU eviction
@@ -182,19 +241,19 @@ Item {
         // Validate cliphistId is numeric only (prevents command injection)
         if (!cliphistId || !/^\d+$/.test(String(cliphistId))) {
             Logger.e("clipper", "Invalid clipboard ID: " + cliphistId);
-            ToastService.showError("Invalid clipboard item");
+            ToastService.showError(pluginApi?.tr("toast.invalid-clipboard-item") || "Invalid clipboard item");
             return;
         }
 
         if (root.pinnedItems.length >= maxPinnedItems) {
-            ToastService.showWarning("Maximum " + maxPinnedItems + " pinned items reached");
+            ToastService.showWarning((pluginApi?.tr("toast.max-pinned-items") || "Maximum {max} pinned items reached").replace("{max}", maxPinnedItems));
             return;
         }
 
         // Find item in current items list to get preview
         const item = root.items.find(i => i.id === cliphistId);
         if (!item) {
-            ToastService.showError("Item not found in clipboard");
+            ToastService.showError(pluginApi?.tr("toast.item-not-found") || "Item not found in clipboard");
             Logger.e("clipper", "Cannot pin - item " + cliphistId + " not in items list");
             return;
         }
@@ -237,7 +296,7 @@ Item {
         onExited: (exitCode) => {
             if (exitCode !== 0) {
                 Logger.e("clipper", "Failed to decode cliphist item " + cliphistId);
-                ToastService.showError("Failed to pin item");
+                ToastService.showError(pluginApi?.tr("toast.failed-to-pin") || "Failed to pin item");
                 return;
             }
 
@@ -246,14 +305,14 @@ Item {
                 const base64 = String(stdout.text).trim();
                 if (!base64 || base64.length === 0) {
                     Logger.e("clipper", "Empty image data");
-                    ToastService.showError("Failed to pin image");
+                    ToastService.showError(pluginApi?.tr("toast.failed-to-pin-image") || "Failed to pin image");
                     return;
                 }
 
                 // Validate image size (approximate: base64 is ~33% larger)
                 const estimatedSize = (base64.length * 3) / 4;
                 if (estimatedSize > root.maxImageSize) {
-                    ToastService.showWarning("Image too large to pin (max 5MB)");
+                    ToastService.showWarning(pluginApi?.tr("toast.image-too-large") || "Image too large to pin (max 5MB)");
                     return;
                 }
 
@@ -263,7 +322,7 @@ Item {
                 // For text, validate size (max 1MB)
                 const textContent = String(stdout.text);
                 if (textContent.length > root.maxTextSize) {
-                    ToastService.showWarning("Text too large to pin (max 1MB)");
+                    ToastService.showWarning(pluginApi?.tr("toast.text-too-large") || "Text too large to pin (max 1MB)");
                     return;
                 }
 
@@ -280,7 +339,7 @@ Item {
             Quickshell.execDetached(["cliphist", "delete", String(cliphistId)]);
 
             root.pinnedRevision++;
-            ToastService.showNotice("Item pinned");
+            ToastService.showNotice(pluginApi?.tr("toast.item-pinned") || "Item pinned");
         }
     }
 
@@ -303,7 +362,210 @@ Item {
         root.pinnedItems = root.pinnedItems.filter(item => item.id !== pinnedId);
         root.savePinnedFile();
         root.pinnedRevision++;
-        ToastService.showNotice("Item unpinned");
+        ToastService.showNotice(pluginApi?.tr("toast.item-unpinned") || "Item unpinned");
+    }
+
+    // ==================== SCRATCHPAD FUNCTIONS ====================
+
+    // Function to create a new scratchpad note
+    function createNoteCard(initialText) {
+        if (root.noteCards.length >= maxNoteCards) {
+            ToastService.showWarning((pluginApi?.tr("toast.max-notes") || "Maximum {max} notes reached").replace("{max}", maxNoteCards));
+            return null;
+        }
+
+        const timestamp = Date.now();
+        const randomSuffix = Math.random().toString(36).substring(2, 8);
+        const noteId = "note_" + timestamp + "_" + randomSuffix;
+
+        // Cascade positioning: offset by 30px for each new note
+        const cascadeOffset = (root.noteCards.length % 10) * 30;
+        const baseX = 20 + cascadeOffset;
+        const baseY = 80 + cascadeOffset;
+
+        // Find highest z-index
+        let maxZ = 0;
+        for (let i = 0; i < root.noteCards.length; i++) {
+            if (root.noteCards[i].zIndex > maxZ) {
+                maxZ = root.noteCards[i].zIndex;
+            }
+        }
+
+        const newNote = {
+            id: noteId,
+            title: "",
+            content: initialText || "",
+            x: baseX,
+            y: baseY,
+            width: 350,
+            height: 280,
+            zIndex: maxZ + 1,
+            color: "yellow",
+            createdAt: new Date().toISOString(),
+            lastModified: new Date().toISOString()
+        };
+
+        // Immutable array update
+        const newNotes = root.noteCards.slice();
+        newNotes.push(newNote);
+        root.noteCards = newNotes;
+        root.noteCardsRevision++;
+
+        // Save to file
+        saveNoteCard(newNote);
+
+        ToastService.showNotice(pluginApi?.tr("toast.note-created") || "Note created");
+        return noteId;
+    }
+
+    // Function to update a note card
+    function updateNoteCard(noteId, updates) {
+        const index = root.noteCards.findIndex(n => n.id === noteId);
+        if (index === -1) {
+            Logger.e("clipper", "Note not found: " + noteId);
+            return;
+        }
+
+        const oldNote = root.noteCards[index];
+        const oldFilename = getNoteFilename(oldNote);
+
+        // Immutable update with Object.assign
+        const updatedNote = Object.assign({}, oldNote, updates, {
+            lastModified: new Date().toISOString()
+        });
+
+        const newFilename = getNoteFilename(updatedNote);
+
+        // If filename changed (title changed), delete old file
+        if (oldFilename !== newFilename && updates.title !== undefined) {
+            const oldFilePath = root.noteCardsDir + "/" + oldFilename;
+            Quickshell.execDetached(["rm", oldFilePath]);
+        }
+
+        // Immutable array update
+        const newNotes = root.noteCards.slice(0, index);
+        newNotes.push(updatedNote);
+        const remaining = root.noteCards.slice(index + 1);
+        for (let i = 0; i < remaining.length; i++) {
+            newNotes.push(remaining[i]);
+        }
+        root.noteCards = newNotes;
+        root.noteCardsRevision++;
+
+        // Save to file
+    }
+
+    // Function to delete a note card
+    function deleteNoteCard(noteId) {
+        // Find note to get filename before deleting
+        const note = root.noteCards.find(n => n.id === noteId);
+        if (note) {
+            const filename = getNoteFilename(note);
+            const filePath = root.noteCardsDir + "/" + filename;
+
+            // Delete file
+            Quickshell.execDetached(["rm", filePath]);
+        }
+
+        // Remove from array
+        root.noteCards = root.noteCards.filter(n => n.id !== noteId);
+        root.noteCardsRevision++;
+
+        // Save to file
+        ToastService.showNotice(pluginApi?.tr("toast.note-deleted") || "Note deleted");
+    }
+
+    // Function to export scratchpad note to .txt file
+    function exportNoteCard(noteId) {
+        const note = root.noteCards.find(n => n.id === noteId);
+        if (!note) {
+            ToastService.showError(pluginApi?.tr("toast.note-not-found") || "Note not found");
+            return;
+        }
+
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        const fileName = "note_" + timestamp + ".txt";
+        const filePath = Quickshell.env("HOME") + "/Documents/" + fileName;
+
+        // Use base64 encoding to safely pass content through shell
+        const base64 = Qt.btoa(note.content || "");
+        Quickshell.execDetached([
+            "sh", "-c",
+            `echo "${base64}" | base64 -d > "${filePath}"`
+        ]);
+
+        ToastService.showNotice((pluginApi?.tr("toast.note-exported") || "Note exported to ~/Documents/{fileName}").replace("{fileName}", fileName));
+    }
+
+    // Helper function to generate safe filename from note title
+    function getNoteFilename(note) {
+        if (!note) {
+            return "untitled.json";
+        }
+
+        // Use title field if available, otherwise use id
+        let title = (note.title && note.title.trim()) ? note.title.trim() : "";
+
+        if (!title || title.length === 0) {
+            title = note.id;
+        }
+
+        // Sanitize filename: remove special characters, max 50 chars
+        title = title.substring(0, 50);
+        title = title.replace(/[^a-zA-Z0-9-_ ]/g, '');
+        title = title.replace(/\s+/g, '_');
+
+        if (!title || title.length === 0) {
+            title = note.id;
+        }
+
+        return title + ".json";
+    }
+
+    // Function to save individual notecard to file
+    function saveNoteCard(note) {
+        const filename = getNoteFilename(note);
+        const filePath = root.noteCardsDir + "/" + filename;
+        const json = JSON.stringify(note, null, 2);
+
+        // Use base64 encoding to safely pass JSON through shell
+        const base64 = Qt.btoa(json);
+        Quickshell.execDetached([
+            "sh", "-c",
+            `echo "${base64}" | base64 -d > "${filePath}"`
+        ]);
+    }
+
+    // Function to save all note cards (saves each to individual file)
+    function saveNoteCards() {
+        // First, increment revision to ensure all local changes are captured
+        root.noteCardsRevision++;
+
+        // Save to file
+
+        // Save each notecard individually
+        for (let i = 0; i < root.noteCards.length; i++) {
+            saveNoteCard(root.noteCards[i]);
+        }
+    }
+
+    // Function to bring note to front (update z-index)
+    function bringNoteToFront(noteId) {
+        const index = root.noteCards.findIndex(n => n.id === noteId);
+        if (index === -1) return;
+
+        // Find highest z-index
+        let maxZ = 0;
+        for (let i = 0; i < root.noteCards.length; i++) {
+            if (root.noteCards[i].zIndex > maxZ) {
+                maxZ = root.noteCards[i].zIndex;
+            }
+        }
+
+        // Only update if not already at front
+        if (root.noteCards[index].zIndex < maxZ) {
+            root.updateNoteCard(noteId, { zIndex: maxZ + 1 });
+        }
     }
 
     // Process for copying pinned images to clipboard
@@ -315,10 +577,10 @@ Item {
 
         onExited: (exitCode) => {
             if (exitCode === 0) {
-                ToastService.showNotice("Copied to clipboard");
+                ToastService.showNotice(pluginApi?.tr("toast.copied-to-clipboard") || "Copied to clipboard");
             } else {
                 Logger.e("clipper", "Failed to copy pinned image");
-                ToastService.showError("Failed to copy image");
+                ToastService.showError(pluginApi?.tr("toast.failed-to-copy-image") || "Failed to copy image");
             }
             stdinEnabled = true;  // Re-enable for next use
         }
@@ -333,10 +595,10 @@ Item {
 
         onExited: (exitCode) => {
             if (exitCode === 0) {
-                ToastService.showNotice("Copied to clipboard");
+                ToastService.showNotice(pluginApi?.tr("toast.copied-to-clipboard") || "Copied to clipboard");
             } else {
                 Logger.e("clipper", "Failed to copy pinned text");
-                ToastService.showError("Failed to copy text");
+                ToastService.showError(pluginApi?.tr("toast.failed-to-copy-text") || "Failed to copy text");
             }
             stdinEnabled = true;  // Re-enable for next use
         }
@@ -355,7 +617,7 @@ Item {
             const matches = item.content.match(/^data:([^;]+);base64,(.+)$/);
             if (!matches) {
                 Logger.e("clipper", "Invalid data URL format");
-                ToastService.showError("Failed to copy image");
+                ToastService.showError(pluginApi?.tr("toast.failed-to-copy-image") || "Failed to copy image");
                 return;
             }
 
@@ -453,10 +715,10 @@ Item {
                 if (selectedText && selectedText.length > 0) {
                     root.addTodoWithText(selectedText, root.pendingPageId);
                 } else {
-                    ToastService.showError("No text selected");
+                    ToastService.showError(pluginApi?.tr("toast.no-text-selected") || "No text selected");
                 }
             } else {
-                ToastService.showError("Failed to get selection");
+                ToastService.showError(pluginApi?.tr("toast.failed-to-get-selection") || "Failed to get selection");
             }
         }
     }
@@ -464,14 +726,14 @@ Item {
     // Add todo with text to specified page via direct PluginService API
     function addTodoWithText(text, pageId) {
         if (!text || text.length === 0) {
-            ToastService.showError("No text to add");
+            ToastService.showError(pluginApi?.tr("toast.no-text-to-add") || "No text to add");
             return;
         }
 
         const todoApi = PluginService.getPluginAPI("todo");
         if (!todoApi) {
             Logger.e("clipper", "ToDo plugin not loaded");
-            ToastService.showError("ToDo plugin not available");
+            ToastService.showError(pluginApi?.tr("toast.todo-not-available") || "ToDo plugin not available");
             return;
         }
 
@@ -491,7 +753,7 @@ Item {
         todoApi.pluginSettings.count = todos.length;
         todoApi.saveSettings();
 
-        ToastService.showNotice("Added to ToDo");
+        ToastService.showNotice(pluginApi?.tr("toast.added-to-todo") || "Added to ToDo");
 
         // Also copy to clipboard
         Quickshell.execDetached(["wl-copy", "--", text]);
@@ -510,7 +772,7 @@ Item {
                 wlCopyProc.stdinEnabled = false;  // Close stdin to signal EOF
             } else {
                 Logger.e("clipper", "Failed to decode clipboard item " + clipboardId);
-                ToastService.showError("Failed to copy to clipboard");
+                ToastService.showError(pluginApi?.tr("toast.failed-to-copy") || "Failed to copy to clipboard");
             }
         }
     }
@@ -543,7 +805,7 @@ Item {
         // Validate id is numeric only (prevents command injection)
         if (!id || !/^\d+$/.test(String(id))) {
             Logger.e("clipper", "Invalid clipboard ID: " + id);
-            ToastService.showError("Invalid clipboard item");
+            ToastService.showError(pluginApi?.tr("toast.invalid-clipboard-item") || "Invalid clipboard item");
             return;
         }
 
@@ -557,7 +819,7 @@ Item {
         // Validate id is numeric only (prevents command injection)
         if (!id || !/^\d+$/.test(String(id))) {
             Logger.e("clipper", "Invalid clipboard ID: " + id);
-            ToastService.showError("Invalid clipboard item");
+            ToastService.showError(pluginApi?.tr("toast.invalid-clipboard-item") || "Invalid clipboard item");
             return;
         }
 
@@ -597,7 +859,7 @@ Item {
     // Add selected text to specific page
     function addSelectedToPage(pageId) {
         if (!pluginApi?.pluginSettings?.enableTodoIntegration) {
-            ToastService.showError("ToDo integration is disabled");
+            ToastService.showError(pluginApi?.tr("toast.todo-disabled") || "ToDo integration is disabled");
             return;
         }
 
@@ -609,29 +871,26 @@ Item {
         target: "plugin:clipper"
 
         function openPanel() {
-            if (pluginApi) {
-                const screens = Quickshell.screens;
-                if (screens && screens.length > 0) {
-                    pluginApi.openPanel(screens[0]);
-                }
+            if (root.pluginApi) {
+                root.pluginApi.withCurrentScreen(screen => {
+                    root.pluginApi.openPanel(screen);
+                });
             }
         }
 
         function closePanel() {
-            if (pluginApi) {
-                const screens = Quickshell.screens;
-                if (screens && screens.length > 0) {
-                    pluginApi.closePanel(screens[0]);
-                }
+            if (root.pluginApi) {
+                root.pluginApi.withCurrentScreen(screen => {
+                    root.pluginApi.closePanel(screen);
+                });
             }
         }
 
         function togglePanel() {
-            if (pluginApi) {
-                const screens = Quickshell.screens;
-                if (screens && screens.length > 0) {
-                    pluginApi.togglePanel(screens[0]);
-                }
+            if (root.pluginApi) {
+                root.pluginApi.withCurrentScreen(screen => {
+                    root.pluginApi.togglePanel(screen);
+                });
             }
         }
 
@@ -657,11 +916,30 @@ Item {
         // Usage: qs -c noctalia-shell ipc call plugin:clipper addSelectionToTodo
         function addSelectionToTodo() {
             if (!pluginApi?.pluginSettings?.enableTodoIntegration) {
-                ToastService.showError("ToDo integration is disabled");
+                ToastService.showError(pluginApi?.tr("toast.todo-disabled") || "ToDo integration is disabled");
                 return;
             }
             // Get selected text first, then show selector
             root.getSelectionAndShowSelector();
+        }
+
+        // NoteCards IPC handlers
+        // Usage: qs -c noctalia-shell ipc call plugin:clipper addNoteCard "Quick note"
+        function addNoteCard(text: string) {
+            const initialText = text || "";
+            root.createNoteCard(initialText);
+        }
+
+        // Usage: qs -c noctalia-shell ipc call plugin:clipper exportNoteCard "note_123_abc"
+        function exportNoteCard(noteId: string) {
+            root.exportNoteCard(noteId);
+        }
+
+        // Add selected text to existing note or create new one
+        // Usage: qs -c noctalia-shell ipc call plugin:clipper addSelectionToNoteCard
+        function addSelectionToNoteCard() {
+            // Get selected text first, then show note selector
+            root.getSelectionAndShowNoteSelector();
         }
     }
 
@@ -676,10 +954,10 @@ Item {
                 if (selectedText && selectedText.length > 0) {
                     root.showTodoPageSelector(selectedText);
                 } else {
-                    ToastService.showError("No text selected");
+                    ToastService.showError(pluginApi?.tr("toast.no-text-selected") || "No text selected");
                 }
             } else {
-                ToastService.showError("Failed to get selection");
+                ToastService.showError(pluginApi?.tr("toast.failed-to-get-selection") || "Failed to get selection");
             }
         }
     }
@@ -701,7 +979,7 @@ Item {
         if (todoPageSelector) {
             todoPageSelector.show(text);
         } else {
-            ToastService.showError("Could not open ToDo selector");
+            ToastService.showError(pluginApi?.tr("toast.could-not-open-todo") || "Could not open ToDo selector");
         }
     }
 
@@ -710,7 +988,63 @@ Item {
         if (root.pendingSelectedText) {
             root.addTodoWithText(root.pendingSelectedText, pageId);
             root.pendingSelectedText = "";
+    }
+
         }
+    // Get selection and show note card selector
+    function getSelectionAndShowNoteSelector() {
+        getSelectionForNoteSelectorProcess.running = true;
+    }
+    function showNoteCardSelector(text) {
+        root.pendingNoteCardText = text;
+        // Load notecards first
+        root.loadNoteCards();
+        // Wait a bit for notes to load, then show selector
+        Qt.callLater(() => {
+            if (noteCardSelector) {
+                noteCardSelector.show(text, root.noteCards);
+            } else {
+                ToastService.showError(pluginApi?.tr("toast.could-not-open-note-selector") || "Could not open note selector");
+            }
+        });
+    }
+
+    // Handle note selection from selector
+    function handleNoteCardSelected(noteId, noteTitle) {
+        if (root.pendingNoteCardText) {
+            root.appendTextToNoteCard(noteId, root.pendingNoteCardText);
+            root.pendingNoteCardText = "";
+        }
+    }
+
+    // Handle creating new note from selection
+    function handleCreateNewNoteFromSelection() {
+        Logger.i("clipper", "handleCreateNewNoteFromSelection called, pendingText: " + root.pendingNoteCardText);
+        if (root.pendingNoteCardText) {
+            // Create new note with bullet point
+            const bulletText = "- " + root.pendingNoteCardText;
+            root.createNoteCard(bulletText);
+            root.pendingNoteCardText = "";
+        }
+    }
+
+    // Append text as bullet point to existing note
+    function appendTextToNoteCard(noteId, text) {
+        for (let i = 0; i < noteCards.length; i++) {
+            if (noteCards[i].id === noteId) {
+                const bulletText = "- " + text;
+                const currentContent = noteCards[i].content || "";
+                const newContent = currentContent ? currentContent + "\n" + bulletText : bulletText;
+                
+                noteCards[i].content = newContent;
+                noteCardsChanged();
+                saveNoteCard(noteCards[i]);
+                
+                ToastService.showNotice(pluginApi?.tr("toast.text-added-to-note") || "Text added to note");
+                return;
+            }
+        }
+        ToastService.showError(pluginApi?.tr("toast.note-not-found") || "Note not found");
     }
 
     // ToDo page selector (single instance, uses first screen)
@@ -720,7 +1054,9 @@ Item {
     Variants {
         model: Quickshell.screens
 
-        TodoPageSelector {
+        delegate: TodoPageSelector {
+            required property var modelData
+
             screen: modelData
             pluginApi: root.pluginApi
 
@@ -741,13 +1077,71 @@ Item {
         }
     }
 
-    // Initialize pinned.json if doesn't exist
+    property var noteCardSelector: null
+    property string pendingNoteCardText: ""
+    property bool pendingShowNoteSelector: false
+
+    Variants {
+        model: Quickshell.screens
+
+        delegate: NoteCardSelector {
+            required property var modelData
+
+            screen: modelData
+            pluginApi: root.pluginApi
+
+            Component.onCompleted: {
+                // Register first selector as the active one
+                if (!root.noteCardSelector) {
+                    root.noteCardSelector = this;
+                }
+            }
+
+            onNoteSelected: (noteId, noteTitle) => {
+                root.handleNoteCardSelected(noteId, noteTitle);
+            }
+
+            onCreateNewNote: () => {
+                root.handleCreateNewNoteFromSelection();
+            }
+
+            onCancelled: {
+                root.pendingNoteCardText = "";
+            }
+        }
+    }
+
+
+    // Process to get selected text for NoteCard selector
+    Process {
+        id: getSelectionForNoteSelectorProcess
+        command: ["wl-paste", "-p", "-n"]
+        stdout: StdioCollector { id: noteSelectionStdout }
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode === 0) {
+                const selectedText = noteSelectionStdout.text.trim();
+                if (selectedText && selectedText.length > 0) {
+                    root.showNoteCardSelector(selectedText);
+                } else {
+                    ToastService.showError(pluginApi?.tr("toast.no-text-selected") || "No text selected");
+                }
+            } else {
+                ToastService.showError(pluginApi?.tr("toast.failed-to-get-selection") || "Failed to get selection");
+            }
+        }
+    }
+    // Initialize pinned.json and notecards.json if they don't exist
     Component.onCompleted: {
         // Create empty pinned.json if it doesn't exist
-        const configPath = Quickshell.env("HOME") + "/.config/noctalia/plugins/clipper/pinned.json";
+        const pinnedPath = Quickshell.env("HOME") + "/.config/noctalia/plugins/clipper/pinned.json";
         Quickshell.execDetached([
             "sh", "-c",
-            `[ -f "${configPath}" ] || echo '{"items":[]}' > "${configPath}"`
+            `[ -f "${pinnedPath}" ] || echo '{"items":[]}' > "${pinnedPath}"`
+        ]);
+
+        // Create notecards directory if it doesn't exist
+        Quickshell.execDetached([
+            "mkdir", "-p", root.noteCardsDir
         ]);
 
         // Force reload pinned items from file
@@ -766,9 +1160,19 @@ Item {
         if (imageDecodeProc.running) imageDecodeProc.terminate();
         if (getSelectionProcess.running) getSelectionProcess.terminate();
         if (getSelectionForSelectorProcess.running) getSelectionForSelectorProcess.terminate();
+        if (getSelectionForNoteSelectorProcess.running) getSelectionForNoteSelectorProcess.terminate();
         if (copyToClipboardProc.running) copyToClipboardProc.terminate();
         if (wlCopyProc.running) wlCopyProc.terminate();
         if (deleteItemProc.running) deleteItemProc.terminate();
         if (wipeProc.running) wipeProc.terminate();
+        if (loadNoteCardsProc.running) loadNoteCardsProc.terminate();
+        
+        // Clear data structures
+        pinnedItems = [];
+        noteCards = [];
+        items = [];
+        firstSeenById = {};
+        imageCache = {};
+        imageCacheOrder = [];
     }
 }

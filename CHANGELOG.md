@@ -1,5 +1,136 @@
 # Clipper Plugin - Comprehensive Changelog
 
+## Version 1.4.0 (2026-02-04)
+
+### NoteCards / Sticky Notes Feature 🎉
+
+**Brand new notecards panel with draggable sticky note cards:**
+- Create, edit, move, and manage multiple note cards in the middle space
+- Persistent storage in `notecards.json` file
+- 5 color themes: Yellow, Pink, Blue, Green, Purple
+- Auto-save with 500ms debounce after typing stops
+- Export individual notes to .txt files in ~/Documents
+- Drag-and-drop positioning with boundary enforcement
+- Z-index management for overlapping cards
+- Maximum 20 notes limit with visual indicators
+
+**New Files:**
+- `NoteCardsCard.qml` (290 lines) - Draggable note card component
+- `NoteCardsPanel.qml` (159 lines) - Container for note cards
+
+**Files Modified:**
+- `Main.qml` (+150 lines) - Data model, CRUD functions, IPC handlers
+- `Panel.qml` (+20 lines) - Added notecards panel in middle space
+- `Settings.qml` (+110 lines) - NoteCards settings section
+- `manifest.json` - Version bump to 1.4.0, updated description
+- `i18n/*.json` (16 files) - Added notecards translation keys
+
+**New Functions in Main.qml:**
+- `createNoteCardsNote(initialText)` - Create note with cascade positioning
+- `updateNoteCardsNote(noteId, updates)` - Update content/position/color
+- `deleteNoteCardsNote(noteId)` - Remove note
+- `exportNoteCardsNote(noteId)` - Export to ~/Documents/*.txt
+- `saveNoteCardsNotes()` - Persist to JSON with base64 encoding
+- `bringNoteToFront(noteId)` - Z-index management
+
+**New IPC Commands:**
+```bash
+qs -c noctalia-shell ipc call plugin:clipper addNoteCardsNote "Quick note"
+qs -c noctalia-shell ipc call plugin:clipper exportNoteCardsNote "note_123_abc"
+```
+
+**NoteCardsCard Features:**
+- Draggable header with grip icon
+- Inline text editing with TextArea
+- Color picker button (cycles through 5 colors)
+- Export button (saves to .txt)
+- Delete button
+- Automatic boundary enforcement
+- Click-to-bring-to-front
+
+**NoteCardsPanel Features:**
+- Empty state UI with "Create Note" button
+- Note counter (X/20) with color coding
+- Floating "Add Note" button
+- Repeater for dynamic note card rendering
+
+**Settings UI:**
+- Enable/disable toggle
+- Default color selector
+- Current notes count display (X/20)
+- Clear all notes button
+
+**Technical Details:**
+- Absolute positioning (x, y coordinates in JSON)
+- Fixed size 250x200px (MVP - resizable in future)
+- Cascade positioning: 30px offset for new notes
+- Storage: `~/.config/noctalia/plugins/clipper/notecards.json`
+- Immutable array updates throughout
+- Component.onDestruction cleanup for timers
+
+**notecards.json Schema:**
+```json
+{
+  "notes": [
+    {
+      "id": "note_1709123456789_abc123",
+      "content": "Note text here...",
+      "x": 450,
+      "y": 150,
+      "width": 250,
+      "height": 200,
+      "zIndex": 1,
+      "color": "yellow",
+      "createdAt": "2026-02-04T10:30:00Z",
+      "lastModified": "2026-02-04T11:45:00Z"
+    }
+  ]
+}
+```
+
+**Bug Fixes During Implementation:**
+- Fixed `qs.Style` import (moved to `qs.Commons`)
+- Removed `NToolTip` component (use `tooltipText` property)
+- Added missing `qs.Widgets` import
+- Changed `size` to `pointSize` for `NIcon` components
+- Removed `iconSize` and `applyUiScale` from `NIconButton`
+- Replaced spread operator (`...`) with `Object.assign()` and `.slice()`
+- Removed `NDropShadow` (not available)
+- Replaced optional chaining (`?.`) with explicit conditional checks
+- Changed arrow functions `(mouse) =>` to traditional syntax
+- Fixed `fontSize`/`fontWeight` to `font.pointSize`/`font.bold`
+
+**Translation Keys Added (16 languages):**
+```json
+{
+  "notecards": {
+    "empty-state": "No notes yet",
+    "empty-hint": "Click the button below to create your first note",
+    "create-note": "Create Note",
+    "change-color": "Change Color",
+    "export": "Export to .txt",
+    "delete": "Delete Note"
+  },
+  "settings": {
+    "notecards": "NoteCards / Sticky Notes",
+    "notecards-enabled": "Enable NoteCards",
+    "notecards-desc": "Show notecards panel for quick notes",
+    "default-note-color": "Default Note Color",
+    "default-note-color-desc": "Color for newly created notes",
+    "notecards-notes-count": "Current Notes",
+    "clear-all-notes": "Clear All Notes"
+  }
+}
+```
+
+**Known Limitations:**
+- Fixed size cards (250x200px) - resizing planned for v1.5.0
+- No rich text formatting - plain text only
+- No markdown support - planned for future
+- Maximum 20 notes - performance limitation
+
+---
+
 ## Version 1.3.2 (2026-02-04)
 
 ### Translation System Overhaul ✅

@@ -45,6 +45,21 @@
     "separator-color-desc": "Лінія між заголовком і вмістом",
     "fg-color": "Колір переднього плану",
     "fg-color-desc": "Колір заголовка, значків і текстового вмісту",
-    "reset-defaults": "Скинути до типових значень"
+    "reset-defaults": "Скинути до типових значень",
+    "notecards": "NoteCards / Sticky Notes",
+    "notecards-enabled": "Enable NoteCards",
+    "notecards-desc": "Show notecards panel for quick notes",
+    "default-note-color": "Default Note Color",
+    "default-note-color-desc": "Color for newly created notes",
+    "notecards-notes-count": "Current Notes",
+    "clear-all-notes": "Clear All Notes"
+  },
+  "notecards": {
+    "empty-state": "No notes yet",
+    "empty-hint": "Click the button below to create your first note",
+    "create-note": "Create Note",
+    "change-color": "Change Color",
+    "export": "Export to .txt",
+    "delete": "Delete Note"
   }
 }

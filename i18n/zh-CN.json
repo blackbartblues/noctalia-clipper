@@ -45,6 +45,21 @@
     "separator-color-desc": "标题和内容之间的线条",
     "fg-color": "前景颜色",
     "fg-color-desc": "标题、图标和文本内容颜色",
-    "reset-defaults": "重置为默认值"
+    "reset-defaults": "重置为默认值",
+    "notecards": "NoteCards / Sticky Notes",
+    "notecards-enabled": "Enable NoteCards",
+    "notecards-desc": "Show notecards panel for quick notes",
+    "default-note-color": "Default Note Color",
+    "default-note-color-desc": "Color for newly created notes",
+    "notecards-notes-count": "Current Notes",
+    "clear-all-notes": "Clear All Notes"
+  },
+  "notecards": {
+    "empty-state": "No notes yet",
+    "empty-hint": "Click the button below to create your first note",
+    "create-note": "Create Note",
+    "change-color": "Change Color",
+    "export": "Export to .txt",
+    "delete": "Delete Note"
   }
 }

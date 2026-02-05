@@ -45,6 +45,21 @@
     "separator-color-desc": "Lijn tussen koptekst en inhoud",
     "fg-color": "Voorgrondkleur",
     "fg-color-desc": "Kleur van titel, pictogrammen en tekstinhoud",
-    "reset-defaults": "Standaardinstellingen herstellen"
+    "reset-defaults": "Standaardinstellingen herstellen",
+    "notecards": "NoteCards / Sticky Notes",
+    "notecards-enabled": "Enable NoteCards",
+    "notecards-desc": "Show notecards panel for quick notes",
+    "default-note-color": "Default Note Color",
+    "default-note-color-desc": "Color for newly created notes",
+    "notecards-notes-count": "Current Notes",
+    "clear-all-notes": "Clear All Notes"
+  },
+  "notecards": {
+    "empty-state": "No notes yet",
+    "empty-hint": "Click the button below to create your first note",
+    "create-note": "Create Note",
+    "change-color": "Change Color",
+    "export": "Export to .txt",
+    "delete": "Delete Note"
   }
 }

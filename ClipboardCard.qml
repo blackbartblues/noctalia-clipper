@@ -198,15 +198,11 @@ Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 35
             color: root.accentColor // Header same as background
-            radius: (typeof Style !== "undefined") ? Style.radiusM : 16
+            topLeftRadius: (typeof Style !== "undefined") ? Style.radiusM : 16
+            topRightRadius: (typeof Style !== "undefined") ? Style.radiusM : 16
+            bottomLeftRadius: 0
+            bottomRightRadius: 0
 
-            // Bottom square fix not needed if body has same color, but kept for structure
-            Rectangle {
-                anchors.bottom: parent.bottom;
-                width: parent.width;
-                height: parent.radius;
-                color: parent.color
-            }
 
             RowLayout {
                 id: headerContent

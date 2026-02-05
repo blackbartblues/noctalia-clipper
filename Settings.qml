@@ -406,6 +406,114 @@ ColumnLayout {
         }
     }
 
+    NDivider {
+        Layout.fillWidth: true
+    }
+
+    // ===== SCRATCHPAD SECTION =====
+    NText {
+        text: pluginApi?.tr("settings.notecards") || "NoteCards / Sticky Notes"
+        font.bold: true
+        font.pointSize: Style.fontSizeL
+    }
+
+    // NoteCards Enable Toggle
+    NToggle {
+        Layout.fillWidth: true
+        label: pluginApi?.tr("settings.notecards-enabled") || "Enable NoteCards"
+        description: pluginApi?.tr("settings.notecards-desc") || "Show notecards panel for quick notes"
+        checked: pluginApi?.pluginSettings?.notecardsEnabled ?? true
+        onToggled: checked => {
+            if (pluginApi) {
+                pluginApi.pluginSettings.notecardsEnabled = checked;
+                pluginApi.saveSettings();
+            }
+        }
+    }
+
+    // Default note color selector
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: Style.marginM
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: 4
+
+            NText {
+                text: pluginApi?.tr("settings.default-note-color") || "Default Note Color"
+                font.bold: true
+            }
+
+            NText {
+                text: pluginApi?.tr("settings.default-note-color-desc") || "Color for newly created notes"
+                color: Color.mOnSurfaceVariant
+                font.pointSize: Style.fontSizeS
+            }
+        }
+
+        NComboBox {
+            Layout.preferredWidth: 150
+            model: [
+                { key: "yellow", name: "Yellow" },
+                { key: "pink", name: "Pink" },
+                { key: "blue", name: "Blue" },
+                { key: "green", name: "Green" },
+                { key: "purple", name: "Purple" }
+            ]
+            currentKey: pluginApi?.pluginSettings?.defaultNoteColor || "yellow"
+            onSelected: key => {
+                if (pluginApi) {
+                    pluginApi.pluginSettings.defaultNoteColor = key;
+                    pluginApi.saveSettings();
+                }
+            }
+        }
+    }
+
+    // Notes count display
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: Style.marginM
+
+        NText {
+            text: pluginApi?.tr("settings.notecards-notes-count") || "Current Notes"
+            font.bold: true
+        }
+
+        Item { Layout.fillWidth: true }
+
+        NText {
+            text: {
+                const count = pluginApi?.mainInstance?.noteCards?.length || 0;
+                const max = pluginApi?.mainInstance?.maxNoteCards || 20;
+                return count + " / " + max;
+            }
+            color: {
+                const count = pluginApi?.mainInstance?.noteCards?.length || 0;
+                const max = pluginApi?.mainInstance?.maxNoteCards || 20;
+                return count >= max ? Color.mError : Color.mOnSurface;
+            }
+        }
+    }
+
+    // Clear all notes button
+    NButton {
+        Layout.alignment: Qt.AlignRight
+        text: pluginApi?.tr("settings.clear-all-notes") || "Clear All Notes"
+        icon: "delete"
+        enabled: (pluginApi?.mainInstance?.noteCards?.length || 0) > 0
+        onClicked: {
+            if (pluginApi?.mainInstance) {
+                // Clear all notes
+                pluginApi.mainInstance.noteCards = [];
+                pluginApi.mainInstance.saveNoteCards();
+                pluginApi.mainInstance.noteCardsRevision++;
+                ToastService.showNotice("All notes cleared");
+            }
+        }
+    }
+
     function saveSettings() {
         if (!pluginApi) {
             Logger.e("clipper", "Cannot save settings: pluginApi is null");
