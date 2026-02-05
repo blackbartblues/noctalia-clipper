@@ -718,6 +718,9 @@ Item {
             return;
         }
 
+        // NOTE: Cross-plugin integration - direct settings manipulation is allowed
+        // when calling another plugin's API. This is NOT internal IPC (forbidden).
+        // We're integrating with ToDo plugin using its data structure.
         const trimmedText = text.substring(0, maxTodoTextLength);
         var todos = todoApi.pluginSettings.todos || [];
 
@@ -726,7 +729,9 @@ Item {
             text: trimmedText,
             completed: false,
             createdAt: new Date().toISOString(),
-            pageId: pageId
+            pageId: pageId,
+            priority: "medium",
+            details: ""
         };
 
         todos.push(newTodo);
