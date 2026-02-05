@@ -105,14 +105,12 @@ ColumnLayout {
             try {
                 cardColors = JSON.parse(JSON.stringify(pluginApi.pluginSettings.cardColors));
             } catch (e) {
-                Logger.e("clipper", "Failed to load cardColors: " + e);
             }
         }
         if (pluginApi?.pluginSettings?.customColors) {
             try {
                 customColors = JSON.parse(JSON.stringify(pluginApi.pluginSettings.customColors));
             } catch (e) {
-                Logger.e("clipper", "Failed to load customColors: " + e);
             }
         }
         if (pluginApi?.pluginSettings?.enableTodoIntegration !== undefined) {
@@ -509,14 +507,13 @@ ColumnLayout {
                 pluginApi.mainInstance.noteCards = [];
                 pluginApi.mainInstance.saveNoteCards();
                 pluginApi.mainInstance.noteCardsRevision++;
-                ToastService.showNotice("All notes cleared");
+                ToastService.showNotice(pluginApi?.tr("toast.notes-cleared") || "All notes cleared");
             }
         }
     }
 
     function saveSettings() {
         if (!pluginApi) {
-            Logger.e("clipper", "Cannot save settings: pluginApi is null");
             return;
         }
 

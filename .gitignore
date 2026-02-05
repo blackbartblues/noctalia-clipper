@@ -12,3 +12,5 @@ settings.json
 
 # Development scripts
 i18n/all_languages.sh
+# User notecards - personal data
+notecards/*.json

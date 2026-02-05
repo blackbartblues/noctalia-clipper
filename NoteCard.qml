@@ -168,7 +168,7 @@ Rectangle {
                             anchors.fill: parent
                             verticalAlignment: Text.AlignVCenter
                             horizontalAlignment: Text.AlignLeft
-                            text: "Untitled"
+                            text: pluginApi?.tr("notecards.untitled-placeholder") || "Untitled"
                             color: parent.color
                             opacity: 0.5
                             visible: titleInput.text.length === 0
@@ -181,25 +181,13 @@ Rectangle {
                             }
                         }
 
-                        onTextChanged: {
-                            if (note) {
-                                note.title = text;
-                            }
+                        onAccepted: {
+                            root.syncChanges();
+                            titleInput.focus = false;
                         }
                     }
 
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: function(mouse) {
-                            titleInput.forceActiveFocus();
-                            titleInput.cursorPosition = titleInput.positionAt(mouse.x, mouse.y);
-                        }
-                        onPressed: function(mouse) {
-                            mouse.accepted = true;
-                        }
-                    }
                 }
-
                 NIconButton {
                     icon: "palette"
                     tooltipText: pluginApi?.tr("notecards.change-color") || "Change Color"
@@ -366,5 +354,8 @@ Rectangle {
                 }
             );
         }
+    }
+    Component.onDestruction: {
+        root.syncChanges();
     }
 }

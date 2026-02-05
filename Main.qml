@@ -56,7 +56,6 @@ Item {
                 root.pinnedItems = data.items || [];
                 root.pinnedRevision++;
             } catch(e) {
-                Logger.e("clipper", "Failed to load pinned items: " + e);
                 root.pinnedItems = [];
             }
         }
@@ -73,7 +72,6 @@ Item {
 
         onExited: (exitCode) => {
             if (exitCode !== 0) {
-                Logger.e("clipper", "Failed to load notecards. Exit code: " + exitCode + ", stderr: " + String(stderr.text));
                 root.noteCards = [];
                 return;
             }
@@ -93,15 +91,8 @@ Item {
                 root.noteCardsRevision++;
 
         // Save to file
-                Logger.i("clipper", "Loaded " + root.noteCards.length + " notecards");
                 
-                // If we were waiting to show note selector, show it now
-                if (root.pendingShowNoteSelector && root.pendingNoteCardText) {
-                    root.pendingShowNoteSelector = false;
-                    root.showNoteCardSelector(root.pendingNoteCardText);
-                }
             } catch(e) {
-                Logger.e("clipper", "Failed to parse notecards: " + e + ". Output length: " + String(stdout.text).length);
                 root.noteCards = [];
             }
         }
@@ -240,7 +231,6 @@ Item {
     function pinItem(cliphistId) {
         // Validate cliphistId is numeric only (prevents command injection)
         if (!cliphistId || !/^\d+$/.test(String(cliphistId))) {
-            Logger.e("clipper", "Invalid clipboard ID: " + cliphistId);
             ToastService.showError(pluginApi?.tr("toast.invalid-clipboard-item") || "Invalid clipboard item");
             return;
         }
@@ -254,7 +244,6 @@ Item {
         const item = root.items.find(i => i.id === cliphistId);
         if (!item) {
             ToastService.showError(pluginApi?.tr("toast.item-not-found") || "Item not found in clipboard");
-            Logger.e("clipper", "Cannot pin - item " + cliphistId + " not in items list");
             return;
         }
 
@@ -295,7 +284,6 @@ Item {
 
         onExited: (exitCode) => {
             if (exitCode !== 0) {
-                Logger.e("clipper", "Failed to decode cliphist item " + cliphistId);
                 ToastService.showError(pluginApi?.tr("toast.failed-to-pin") || "Failed to pin item");
                 return;
             }
@@ -304,7 +292,6 @@ Item {
                 // For images, stdout.text contains base64-encoded data
                 const base64 = String(stdout.text).trim();
                 if (!base64 || base64.length === 0) {
-                    Logger.e("clipper", "Empty image data");
                     ToastService.showError(pluginApi?.tr("toast.failed-to-pin-image") || "Failed to pin image");
                     return;
                 }
@@ -422,7 +409,6 @@ Item {
     function updateNoteCard(noteId, updates) {
         const index = root.noteCards.findIndex(n => n.id === noteId);
         if (index === -1) {
-            Logger.e("clipper", "Note not found: " + noteId);
             return;
         }
 
@@ -579,7 +565,6 @@ Item {
             if (exitCode === 0) {
                 ToastService.showNotice(pluginApi?.tr("toast.copied-to-clipboard") || "Copied to clipboard");
             } else {
-                Logger.e("clipper", "Failed to copy pinned image");
                 ToastService.showError(pluginApi?.tr("toast.failed-to-copy-image") || "Failed to copy image");
             }
             stdinEnabled = true;  // Re-enable for next use
@@ -597,7 +582,6 @@ Item {
             if (exitCode === 0) {
                 ToastService.showNotice(pluginApi?.tr("toast.copied-to-clipboard") || "Copied to clipboard");
             } else {
-                Logger.e("clipper", "Failed to copy pinned text");
                 ToastService.showError(pluginApi?.tr("toast.failed-to-copy-text") || "Failed to copy text");
             }
             stdinEnabled = true;  // Re-enable for next use
@@ -616,7 +600,6 @@ Item {
             // Extract base64 from data URL: data:image/png;base64,iVBORw0K...
             const matches = item.content.match(/^data:([^;]+);base64,(.+)$/);
             if (!matches) {
-                Logger.e("clipper", "Invalid data URL format");
                 ToastService.showError(pluginApi?.tr("toast.failed-to-copy-image") || "Failed to copy image");
                 return;
             }
@@ -651,7 +634,6 @@ Item {
     function decodeToDataUrl(cliphistId, mimeType, callback) {
         // Validate cliphistId is numeric only (prevents command injection)
         if (!cliphistId || !/^\d+$/.test(String(cliphistId))) {
-            Logger.e("clipper", "Invalid cliphistId: " + cliphistId);
             return;
         }
 
@@ -732,7 +714,6 @@ Item {
 
         const todoApi = PluginService.getPluginAPI("todo");
         if (!todoApi) {
-            Logger.e("clipper", "ToDo plugin not loaded");
             ToastService.showError(pluginApi?.tr("toast.todo-not-available") || "ToDo plugin not available");
             return;
         }
@@ -771,7 +752,6 @@ Item {
                 wlCopyProc.write(stdout.data);
                 wlCopyProc.stdinEnabled = false;  // Close stdin to signal EOF
             } else {
-                Logger.e("clipper", "Failed to decode clipboard item " + clipboardId);
                 ToastService.showError(pluginApi?.tr("toast.failed-to-copy") || "Failed to copy to clipboard");
             }
         }
@@ -786,7 +766,6 @@ Item {
 
         onExited: (exitCode) => {
             if (exitCode !== 0) {
-                Logger.e("clipper", "wl-copy failed with exit code " + exitCode);
             }
             stdinEnabled = true;  // Re-enable for next use
         }
@@ -804,7 +783,6 @@ Item {
     function copyToClipboard(id) {
         // Validate id is numeric only (prevents command injection)
         if (!id || !/^\d+$/.test(String(id))) {
-            Logger.e("clipper", "Invalid clipboard ID: " + id);
             ToastService.showError(pluginApi?.tr("toast.invalid-clipboard-item") || "Invalid clipboard item");
             return;
         }
@@ -818,7 +796,6 @@ Item {
     function deleteById(id) {
         // Validate id is numeric only (prevents command injection)
         if (!id || !/^\d+$/.test(String(id))) {
-            Logger.e("clipper", "Invalid clipboard ID: " + id);
             ToastService.showError(pluginApi?.tr("toast.invalid-clipboard-item") || "Invalid clipboard item");
             return;
         }
@@ -974,10 +951,25 @@ Item {
 
     // Show ToDo page selector at cursor position
     function showTodoPageSelector(text) {
+        root.activeSelector = "todo";
+        root.activeSelector = "todo";
         root.pendingSelectedText = text;
-        // Show selector on first screen (it's fullscreen overlay, will work on any screen)
+        
+        // Get pages from ToDo plugin
+        const todoApi = PluginService.getPluginAPI("todo");
+        let todoPages = [];
+        if (todoApi) {
+            if (todoApi.mainInstance) {
+                todoPages = todoApi.pluginSettings.pages || [];
+            } else {
+            }
+        } else {
+        }
+        
+        
+        // Show selector with pages list
         if (todoPageSelector) {
-            todoPageSelector.show(text);
+            todoPageSelector.show(text, todoPages);
         } else {
             ToastService.showError(pluginApi?.tr("toast.could-not-open-todo") || "Could not open ToDo selector");
         }
@@ -988,14 +980,15 @@ Item {
         if (root.pendingSelectedText) {
             root.addTodoWithText(root.pendingSelectedText, pageId);
             root.pendingSelectedText = "";
-    }
-
         }
+    }
     // Get selection and show note card selector
     function getSelectionAndShowNoteSelector() {
         getSelectionForNoteSelectorProcess.running = true;
     }
     function showNoteCardSelector(text) {
+        root.activeSelector = "notecard";
+        root.activeSelector = "notecard";
         root.pendingNoteCardText = text;
         // Load notecards first
         root.loadNoteCards();
@@ -1018,8 +1011,19 @@ Item {
     }
 
     // Handle creating new note from selection
+    // Handle creating new ToDo page from selection
+    function handleCreateNewTodoPage() {
+        if (root.pendingSelectedText) {
+            const todoApi = PluginService.getPluginAPI("todo");
+            if (todoApi && todoApi.mainInstance) {
+                todoApi.mainInstance.addTextToNewPage(root.pendingSelectedText);
+                ToastService.showNotice(pluginApi?.tr("toast.todo-page-created") || "New ToDo page created");
+            }
+            root.pendingSelectedText = "";
+        }
+    }
+
     function handleCreateNewNoteFromSelection() {
-        Logger.i("clipper", "handleCreateNewNoteFromSelection called, pendingText: " + root.pendingNoteCardText);
         if (root.pendingNoteCardText) {
             // Create new note with bullet point
             const bulletText = "- " + root.pendingNoteCardText;
@@ -1049,70 +1053,68 @@ Item {
 
     // ToDo page selector (single instance, uses first screen)
     // It's a fullscreen overlay so it works regardless of which screen cursor is on
-    property var todoPageSelector: null
+    // Selection context menu (shared for both note and todo selection)
+    property var selectionMenu: null
+    property string activeSelector: ""  // "todo" or "notecard"
 
     Variants {
         model: Quickshell.screens
 
-        delegate: TodoPageSelector {
+        delegate: SelectionContextMenu {
             required property var modelData
 
             screen: modelData
             pluginApi: root.pluginApi
 
             Component.onCompleted: {
-                // Register first selector as the active one
-                if (!root.todoPageSelector) {
-                    root.todoPageSelector = this;
+                if (!root.selectionMenu) {
+                    root.selectionMenu = this;
                 }
             }
 
-            onPageSelected: (pageId, pageName) => {
-                root.handleTodoPageSelected(pageId, pageName);
+            onItemSelected: (action) => {
+                // Route to appropriate handler
+                if (root.activeSelector === "notecard" && root.noteCardSelector) {
+                    root.noteCardSelector.handleItemSelected(action);
+                } else if (root.activeSelector === "todo" && root.todoPageSelector) {
+                    root.todoPageSelector.handleItemSelected(action);
+                }
             }
 
             onCancelled: {
                 root.pendingSelectedText = "";
-            }
-        }
-    }
-
-    property var noteCardSelector: null
-    property string pendingNoteCardText: ""
-    property bool pendingShowNoteSelector: false
-
-    Variants {
-        model: Quickshell.screens
-
-        delegate: NoteCardSelector {
-            required property var modelData
-
-            screen: modelData
-            pluginApi: root.pluginApi
-
-            Component.onCompleted: {
-                // Register first selector as the active one
-                if (!root.noteCardSelector) {
-                    root.noteCardSelector = this;
-                }
-            }
-
-            onNoteSelected: (noteId, noteTitle) => {
-                root.handleNoteCardSelected(noteId, noteTitle);
-            }
-
-            onCreateNewNote: () => {
-                root.handleCreateNewNoteFromSelection();
-            }
-
-            onCancelled: {
                 root.pendingNoteCardText = "";
             }
         }
     }
 
+    // Note card selector (logic only)
+    property var noteCardSelector: NoteCardSelector {
+        pluginApi: root.pluginApi
+        selectionMenu: root.selectionMenu
 
-    // Process to get selected text for NoteCard selector
+        onNoteSelected: (noteId, noteTitle) => {
+            root.handleNoteCardSelected(noteId, noteTitle);
+        }
+
+        onCreateNewNote: () => {
+            root.handleCreateNewNoteFromSelection();
+        }
+    }
+
+    property string pendingNoteCardText: ""
+
+    // Todo page selector (logic only)
+    property var todoPageSelector: TodoPageSelector {
+        pluginApi: root.pluginApi
+        selectionMenu: root.selectionMenu
+
+        onPageSelected: (pageId, pageName) => {
+            root.handleTodoPageSelected(pageId, pageName);
+        }
+
+    }
+
     Process {
         id: getSelectionForNoteSelectorProcess
         command: ["wl-paste", "-p", "-n"]

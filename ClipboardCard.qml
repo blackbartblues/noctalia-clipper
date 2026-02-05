@@ -337,4 +337,9 @@ Rectangle {
             }
         }
     }
+    Component.onDestruction: {
+        if (todoContextMenu && todoContextMenu.visible) {
+            todoContextMenu.visible = false;
+        }
+    }
 }

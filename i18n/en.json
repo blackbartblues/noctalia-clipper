@@ -35,7 +35,8 @@
     "create-note": "Create Note",
     "change-color": "Change Color",
     "export": "Export to .txt",
-    "delete": "Delete Note"
+    "delete": "Delete Note",
+    "untitled-placeholder": "Untitled"
   },
   "toast": {
     "invalid-clipboard-item": "Invalid clipboard item",
@@ -64,7 +65,10 @@
     "todo-disabled": "ToDo integration is disabled",
     "could-not-open-todo": "Could not open ToDo selector",
     "could-not-open-note-selector": "Could not open note selector",
-    "text-added-to-note": "Text added to note"
+    "text-added-to-note": "Text added to note",
+    "todo-page-created": "New ToDo page created",
+    "failed-to-get-cursor-position": "Failed to get cursor position",
+    "notes-cleared": "All notes cleared"
   },
   "settings": {
     "integrations": "Integrations",

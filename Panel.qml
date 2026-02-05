@@ -530,14 +530,14 @@ Item {
                     onPinClicked: {
                         if (isPinned) {
                             root.pluginApi?.mainInstance?.unpinItem(clipboardId);
-                            ToastService.showNotice("Item unpinned");
+                            ToastService.showNotice(pluginApi?.tr("toast.item-unpinned") || "Item unpinned");
                         } else {
                             const pinnedItems = root.pluginApi?.mainInstance?.pinnedItems || [];
                             if (pinnedItems.length >= 20) {
-                                ToastService.showWarning("Maximum 20 pinned items reached");
+                                ToastService.showWarning((pluginApi?.tr("toast.max-pinned-items") || "Maximum {max} pinned items reached").replace("{max}", "20"));
                             } else {
                                 root.pluginApi?.mainInstance?.pinItem(clipboardId);
-                                ToastService.showNotice("Item pinned");
+                                ToastService.showNotice(pluginApi?.tr("toast.item-pinned") || "Item pinned");
                             }
                         }
                     }
@@ -632,7 +632,7 @@ Item {
 
                         onPinClicked: {
                             root.pluginApi?.mainInstance?.unpinItem(modelData.id);
-                            ToastService.showNotice("Item unpinned");
+                            ToastService.showNotice(pluginApi?.tr("toast.item-unpinned") || "Item unpinned");
                         }
 
                         onDeleteClicked: {
@@ -661,10 +661,12 @@ Item {
             anchors.bottomMargin: Style.marginM
 
             NoteCardsPanel {
+                id: notecardsPanelInstance
                 anchors.fill: parent
                 pluginApi: root.pluginApi
                 screen: root.currentScreen
             }
+
         }  // End noteCardsPanel
     }  // End mainContainer
 

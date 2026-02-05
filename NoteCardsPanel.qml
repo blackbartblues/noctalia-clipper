@@ -85,23 +85,57 @@ Item {
         }
     }
 
-    // Repeater for note cards
-    Repeater {
-        id: noteCardsRepeater
-        model: (root.pluginApi && root.pluginApi.mainInstance) ? (root.pluginApi.mainInstance.noteCards || []) : []
+    // Use ListModel to avoid binding loop
+    ListModel {
+        id: noteCardsModel
+    }
 
-        NoteCard {
-            pluginApi: root.pluginApi
-            note: modelData
-            noteIndex: index
-            z: 1  // Above background MouseArea
+    property int lastRevision: -1
 
-            // React to revision changes
-            property int revision: (root.pluginApi && root.pluginApi.mainInstance) ? (root.pluginApi.mainInstance.noteCardsRevision || 0) : 0
+    // Manual update function
+    function updateNoteCardsModel() {
+        noteCardsModel.clear();
+        if (root.pluginApi && root.pluginApi.mainInstance) {
+            const notes = root.pluginApi.mainInstance.noteCards || [];
+            for (let i = 0; i < notes.length; i++) {
+                noteCardsModel.append({"noteData": notes[i], "noteIdx": i});
+            }
+            lastRevision = root.pluginApi.mainInstance.noteCardsRevision || 0;
         }
     }
 
-    // Note controls (TOP-LEFT corner)
+    // Timer to check for changes
+    Timer {
+        id: revisionTimer
+        interval: 200
+        running: root.visible
+        repeat: true
+        onTriggered: {
+            if (root.pluginApi && root.pluginApi.mainInstance) {
+                const currentRevision = root.pluginApi.mainInstance.noteCardsRevision || 0;
+                if (currentRevision !== root.lastRevision) {
+                    root.updateNoteCardsModel();
+                }
+            }
+        }
+    }
+
+    Component.onCompleted: {
+        updateNoteCardsModel();
+    }
+
+    // Repeater for note cards
+    Repeater {
+        id: noteCardsRepeater
+        model: noteCardsModel
+
+        NoteCard {
+            pluginApi: root.pluginApi
+            note: noteData
+            noteIndex: noteIdx
+            z: 1  // Above background MouseArea
+        }
+    }
     Rectangle {
         anchors.left: parent.left
         anchors.top: parent.top
@@ -137,7 +171,7 @@ Item {
                         const max = root.pluginApi.mainInstance.maxNoteCards || 20;
 
                         if (count >= max) {
-                            ToastService.showWarning("Maximum " + max + " notes reached");
+                            ToastService.showWarning((pluginApi?.tr("toast.max-notes") || "Maximum {max} notes reached").replace("{max}", max));
                         } else {
                             root.pluginApi.mainInstance.createNoteCard("");
                         }
@@ -177,4 +211,9 @@ Item {
             }
         }
     }
+    Component.onDestruction: {
+        revisionTimer.stop();
+        noteCardsModel.clear();
+    }
+
 }
