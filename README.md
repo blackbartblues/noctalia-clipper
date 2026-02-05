@@ -16,7 +16,7 @@
 ### 📝 NoteCards (Sticky Notes)
 Quick capture and organize your thoughts with persistent sticky notes:
 
-https://github.com/user-attachments/assets/notecard-preview.mp4
+![NoteCards Demo](Assets/notecard-preview.gif)
 
 - **Individual JSON Storage**: Each notecard stored separately for data safety
 - **Editable Titles**: Click title to edit, press Enter to save
@@ -29,7 +29,7 @@ https://github.com/user-attachments/assets/notecard-preview.mp4
 ### ✅ ToDo Integration
 Seamless integration with Noctalia ToDo plugin:
 
-https://github.com/user-attachments/assets/todo-preview.mp4
+![ToDo Integration Demo](Assets/todo-preview.gif)
 
 - **Smart Context Menu**: Right-click clipboard items to add to specific ToDo pages
 - **Selection to ToDo**: Capture selected text directly to ToDo via keybind
@@ -46,18 +46,14 @@ https://github.com/user-attachments/assets/todo-preview.mp4
 ## 🎬 Video Demonstrations
 
 ### NoteCards in Action
-[Notecard Preview.mp4](Assets/Notecard%20Preview.mp4)
-- Creating notecards
-- Editing titles and content
-- Color coding and organization
-- Export functionality
+Creating notecards, editing titles and content, color coding, and exporting:
+
+![NoteCards Demo](Assets/notecard-preview.gif)
 
 ### ToDo Integration
-[ToDo Preview.mp4](Assets/ToDo%20Preview.mp4)
-- Adding clipboard items to ToDo
-- Selection to ToDo workflow
-- Multi-page ToDo management
+Adding clipboard items to ToDo, selection to ToDo workflow, and multi-page management:
 
+![ToDo Integration Demo](Assets/todo-preview.gif)
 ## 🚀 Installation
 
 ### From Noctalia Plugin Manager (Recommended)
