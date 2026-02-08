@@ -76,5 +76,9 @@
     }
   },
   "enableTodoIntegration": true,
-  "autoOpenPinnedPanel": false
+  "autoOpenPinnedPanel": false,
+  "pincardsEnabled": true,
+  "notecardsEnabled": true,
+  "showCloseButton": true,
+  "closeOnBackgroundClick": true
 }
