@@ -20,7 +20,11 @@
   },
   "metadata": {
     "defaultSettings": {
-      "position": "Bottom"
+      "position": "Bottom",
+      "enableTodoIntegration": false,
+      "pincardsEnabled": true,
+      "notecardsEnabled": true,
+      "showCloseButton": false
     }
   }
 }
