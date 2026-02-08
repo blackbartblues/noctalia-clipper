@@ -754,6 +754,7 @@ Item {
         onExited: (exitCode) => {
             if (exitCode === 0) {
                 // Now copy the decoded content to clipboard
+                wlCopyProc.running = true;
                 wlCopyProc.write(stdout.data);
                 wlCopyProc.stdinEnabled = false;  // Close stdin to signal EOF
             } else {
